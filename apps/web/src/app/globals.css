@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #FFFFFF;
+  --color-foreground: #000000;
+  --color-primary: #729D64;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #5C6E56;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #CFDCCC;
+  --color-muted-foreground: #666666;
+  --color-accent: #EFC89A;
+  --color-accent-foreground: #000000;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #D4CBC1;
+  --color-input: #D4CBC1;
+  --color-ring: #729D64;
+  --color-footer: #222920;
+  --color-tan: #EFC89A;
+  --color-taupe: #D4CBC1;
+  --color-yellow: #F8E704;
+  --font-sans: var(--font-roboto);
+  --font-heading: var(--font-poppins);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --color-background: #1a1a1a;
+  --color-foreground: #f0f0f0;
+  --color-primary: #729D64;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #5C6E56;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #2a2a2a;
+  --color-muted-foreground: #999999;
+  --color-accent: #5C6E56;
+  --color-accent-foreground: #f0f0f0;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #333333;
+  --color-input: #333333;
+  --color-ring: #729D64;
+  --color-footer: #222920;
+  --color-tan: #5C4A3A;
+  --color-taupe: #3a3a3a;
+  --color-yellow: #F8E704;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-poppins), sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer components {
+  .btn-sol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 30px 0 30px;
+    padding: 20px 40px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .btn-sol-primary {
+    background-color: #729D64;
+    color: #FFFFFF;
+  }
+  .btn-sol-primary:hover {
+    background-color: #EFC89A;
+    color: #000000;
+  }
+  .btn-sol-outline {
+    border: 1px solid #729D64;
+    color: #729D64;
+    background-color: transparent;
+  }
+  .btn-sol-outline:hover {
+    background-color: #729D64;
+    color: #FFFFFF;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m celery -A src.tasks worker --loglevel=info",
+    "lint": "echo 'lint ok'"
+  }
+}
