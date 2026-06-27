@@ -58,8 +58,17 @@ const PLANS = [
 
 export default function PricingPage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <section className="text-center">
+    <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="absolute -top-10 -right-10 opacity-[0.04] pointer-events-none">
+        <img src="/sol-icon.svg" alt="" className="w-[250px]" />
+      </div>
+      <div className="absolute -bottom-10 -left-10 opacity-[0.04] pointer-events-none rotate-45">
+        <img src="/sol-icon.svg" alt="" className="w-[250px]" />
+      </div>
+      <section className="text-center relative">
+        <div className="flex justify-center mb-4">
+          <img src="/sol-icon.svg" alt="SOL" className="h-12 w-12" />
+        </div>
         <h1 className="text-5xl font-black font-heading">Pricing</h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Choose the plan that fits your journey. All plans include access to our community hub.

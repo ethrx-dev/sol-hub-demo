@@ -35,10 +35,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-40 w-full bg-white shadow-sm">
       <div className="mx-auto flex h-[70px] max-w-[1173px] items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[0_8px_0_8px] bg-primary text-sm font-bold text-primary-foreground">
-            S
-          </div>
-          <span className="text-xl font-bold font-heading text-foreground">SOL Hub</span>
+          <img src="/sol-logo.svg" alt="SOL Hub" className="h-8 w-auto" />
+          <span className="text-xl font-bold font-heading text-foreground">Hub</span>
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">

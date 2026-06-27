@@ -63,8 +63,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12 bg-gradient-to-br from-sage-light/30 via-background to-sage-light/20">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12 relative">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-6">
+          <img src="/sol-icon.svg" alt="SOL" className="h-12 w-12" />
+        </div>
+        <Card>
         <CardHeader className="text-center">
           <CardTitle>Create your account</CardTitle>
           <CardDescription>Join the SOL Hub community</CardDescription>
@@ -135,6 +139,7 @@ export default function RegisterPage() {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

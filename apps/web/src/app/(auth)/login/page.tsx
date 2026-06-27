@@ -33,8 +33,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 bg-gradient-to-br from-sage-light/30 via-background to-sage-light/20">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center px-4 relative">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-6">
+          <img src="/sol-icon.svg" alt="SOL" className="h-12 w-12" />
+        </div>
+        <Card>
         <CardHeader className="text-center">
           <CardTitle>Welcome back</CardTitle>
           <CardDescription>Sign in to your SOL Hub account</CardDescription>
@@ -82,6 +86,7 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

@@ -56,6 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem("auth_token");
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        localStorage.removeItem("auth_token");
+        setIsLoading(false);
+        return;
+      }
       const data = await api.get<User>("/auth/me");
       setUser(data);
     } catch {
