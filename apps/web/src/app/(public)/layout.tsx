@@ -10,15 +10,19 @@ export default function PublicLayout({
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">{children}</main>
-      <footer className="border-t-2 border-tan bg-footer text-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <footer className="relative border-t-2 border-tan bg-footer text-white overflow-hidden">
+        <div className="absolute bottom-0 right-0 opacity-[0.04] pointer-events-none">
+          <img src="/sol-asset-5.svg" alt="" className="w-[400px] sm:w-[600px]" />
+        </div>
+        <div className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none">
+          <img src="/sol-icon.svg" alt="" className="w-[150px]" />
+        </div>
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-[0_8px_0_8px] bg-primary text-sm font-bold text-primary-foreground">
-                  S
-                </div>
-                <span className="text-lg font-bold font-heading">SOL Hub</span>
+                <img src="/sol-logo.svg" alt="SOL Hub" className="h-8 w-auto" />
+                <span className="text-lg font-bold font-heading">Hub</span>
               </div>
               <p className="mt-3 text-sm text-white/70">
                 Nurturing dreams into successful businesses through community-powered incubation.
