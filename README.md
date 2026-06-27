@@ -12,7 +12,7 @@ A standalone **Impact Incubation Platform** connecting **Innovators**, **Mentors
 # Prerequisites: Node 22+, Python 3.13+, Docker, pnpm
 
 # 1. Install JS dependencies (from repo root)
-pnpm install
+npm install
 
 # 2. Install Python dependencies
 cd apps/api && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && cd ../..
