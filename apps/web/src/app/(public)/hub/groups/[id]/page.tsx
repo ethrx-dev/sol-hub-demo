@@ -1,12 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, Check } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Avatar, AvatarFallback } from "@/src/components/ui/avatar";
 import { Badge } from "@/src/components/ui/badge";
+import { api } from "@/src/lib/api-client";
+import { useAuth } from "@/src/lib/auth";
 
 const group = {
   id: "1",
@@ -27,6 +29,23 @@ export default function GroupDetailPage({
   params: Promise<{ id: string }>;
 }) {
   use(params);
+  const { user } = useAuth();
+  const [joined, setJoined] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleJoin = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await api.post(`/groups/${group.id}/join`);
+      setJoined(true);
+    } catch {
+      // already a member or error
+      setJoined(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -73,7 +92,30 @@ export default function GroupDetailPage({
           </CardContent>
         </Card>
 
-        <Button className="w-full">Join Group</Button>
+        {user ? (
+          <Button
+            className="w-full"
+            onClick={handleJoin}
+            loading={loading}
+            disabled={joined}
+            variant={joined ? "secondary" : "default"}
+          >
+            {joined ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Joined
+              </>
+            ) : (
+              "Join Group"
+            )}
+          </Button>
+        ) : (
+          <Link href="/login">
+            <Button className="w-full" variant="outline">
+              Sign in to join this group
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );
