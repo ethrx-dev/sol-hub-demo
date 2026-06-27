@@ -1,47 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MessageSquare, Users, Image, Video, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
+import { Skeleton } from "@/src/components/ui/skeleton";
 import { ActivityFeed } from "@/src/components/shared/activity-feed";
-
-const mockPosts = [
-  {
-    id: "1",
-    authorName: "Alex Rivera",
-    authorAvatar: "",
-    content: "Just hit our first milestone on GreenGrid AI! Thanks to our mentor for the guidance.",
-    likes: 12,
-    comments: 4,
-    liked: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "2",
-    authorName: "Sarah Chen",
-    authorAvatar: "",
-    content: "Looking for a co-founder with experience in healthcare regulation. Anyone interested?",
-    likes: 8,
-    comments: 6,
-    liked: true,
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-  },
-];
-
-const mockGroups = [
-  { id: "1", name: "CleanTech Innovators", members: 24, description: "For founders building in clean technology" },
-  { id: "2", name: "Women in Tech", members: 18, description: "Supporting women entrepreneurs" },
-  { id: "3", name: "AI/ML Founders", members: 31, description: "AI and machine learning startups" },
-];
+import { api } from "@/src/lib/api-client";
 
 export default function HubPage() {
-  const [posts, setPosts] = useState(mockPosts);
-  const [hasMore, setHasMore] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [skip, setSkip] = useState(0);
+  const limit = 10;
 
-  const loadMore = () => {};
+  const fetchPosts = async (append = false) => {
+    try {
+      const data: any = await api.get(`/feed/?skip=${append ? skip : 0}&limit=${limit}`);
+      const mapped = (data.items || []).map((p: any) => ({
+        id: p.id,
+        authorName: p.author_name,
+        authorAvatar: p.author_avatar,
+        content: p.content,
+        media: p.media_urls,
+        likes: p.like_count,
+        comments: p.comment_count,
+        liked: p.is_liked,
+        createdAt: p.created_at,
+      }));
+      setPosts(append ? (prev) => [...prev, ...mapped] : mapped);
+      setTotal(data.total || 0);
+      setSkip(append ? skip + limit : limit);
+    } catch {
+      // fall back
+    } finally {
+      setLoadingFeed(false);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const data: any = await api.get("/groups/?limit=20");
+      setGroups(data.items || []);
+    } catch {
+      // fall back
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  useEffect(() => { fetchPosts(); fetchGroups(); }, []);
+
+  const loadMore = () => fetchPosts(true);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -78,33 +93,48 @@ export default function HubPage() {
         </TabsList>
 
         <TabsContent value="feed" className="mt-6">
-          <ActivityFeed posts={posts} loadMore={loadMore} hasMore={hasMore} />
+          <ActivityFeed posts={posts} loadMore={loadMore} hasMore={posts.length < total} loading={loadingFeed} />
         </TabsContent>
 
         <TabsContent value="groups" className="mt-6">
           <div className="mb-4 flex justify-end">
-            <Button variant="outline" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Group
-            </Button>
+            <Link href="/hub/groups">
+              <Button variant="outline" size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Browse All Groups
+              </Button>
+            </Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {mockGroups.map((group) => (
-              <Link key={group.id} href={`/hub/groups/${group.id}`}>
-                <Card className="transition-shadow hover:shadow-md">
+          {loadingGroups ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2].map((i) => (
+                <Card key={i}>
                   <CardContent className="p-5">
-                    <h3 className="font-semibold">{group.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                      {group.description}
-                    </p>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      {group.members} members
-                    </p>
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="mt-2 h-4 w-full" />
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {groups.slice(0, 4).map((group) => (
+                <Link key={group.id} href={`/hub/groups/${group.id}`}>
+                  <Card className="transition-shadow hover:shadow-md">
+                    <CardContent className="p-5">
+                      <h3 className="font-semibold">{group.name}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                        {group.description}
+                      </p>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        {group.member_count} members
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="members" className="mt-6">
