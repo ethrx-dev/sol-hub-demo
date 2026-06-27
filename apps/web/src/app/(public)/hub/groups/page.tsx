@@ -1,28 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
-import { useState } from "react";
-
-const groups = [
-  { id: "1", name: "CleanTech Innovators", members: 24, description: "For founders building in clean technology" },
-  { id: "2", name: "Women in Tech", members: 18, description: "Supporting women entrepreneurs" },
-  { id: "3", name: "AI/ML Founders", members: 31, description: "AI and machine learning startups" },
-  { id: "4", name: "HealthTech Pioneers", members: 15, description: "Healthcare innovation and technology" },
-  { id: "5", name: "Impact Investors Circle", members: 22, description: "For conscious investors" },
-  { id: "6", name: " SaaS Builders", members: 27, description: "SaaS founders and developers" },
-];
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { useState, useEffect } from "react";
+import { api } from "@/src/lib/api-client";
 
 export default function GroupsPage() {
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    api.get("/groups/?limit=50")
+      .then((data: any) => setGroups(data.items || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = groups.filter(
     (g) =>
       g.name.toLowerCase().includes(search.toLowerCase()) ||
-      g.description.toLowerCase().includes(search.toLowerCase())
+      (g.description || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -42,7 +44,19 @@ export default function GroupsPage() {
         className="mb-6"
       />
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-3 h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           No groups found.
         </div>
@@ -56,8 +70,9 @@ export default function GroupsPage() {
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                     {group.description}
                   </p>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    {group.members} members
+                  <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    {group.member_count} members
                   </p>
                 </CardContent>
               </Card>

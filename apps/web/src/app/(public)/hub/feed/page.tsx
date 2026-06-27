@@ -1,45 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ActivityFeed } from "@/src/components/shared/activity-feed";
-
-const mockPosts = [
-  {
-    id: "1",
-    authorName: "Alex Rivera",
-    authorAvatar: "",
-    content: "Just hit our first milestone on GreenGrid AI! Thanks to our mentor for the guidance.",
-    likes: 12,
-    comments: 4,
-    liked: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "2",
-    authorName: "Sarah Chen",
-    authorAvatar: "",
-    content: "Looking for a co-founder with experience in healthcare regulation. Anyone interested?",
-    likes: 8,
-    comments: 6,
-    liked: true,
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: "3",
-    authorName: "James Wilson",
-    authorAvatar: "",
-    content: "Excited to announce that EduFuture has been accepted into the SOL Hub program!",
-    likes: 24,
-    comments: 10,
-    liked: false,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+import { api } from "@/src/lib/api-client";
 
 export default function FeedPage() {
-  const [posts] = useState(mockPosts);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [skip, setSkip] = useState(0);
+  const limit = 20;
+
+  const fetchPosts = async (append = false) => {
+    try {
+      const data: any = await api.get(`/feed/?skip=${append ? skip : 0}&limit=${limit}`);
+      const mapped = (data.items || []).map((p: any) => ({
+        id: p.id,
+        authorName: p.author_name,
+        authorAvatar: p.author_avatar,
+        content: p.content,
+        media: p.media_urls,
+        likes: p.like_count,
+        comments: p.comment_count,
+        liked: p.is_liked,
+        createdAt: p.created_at,
+      }));
+      setPosts(append ? (prev) => [...prev, ...mapped] : mapped);
+      setTotal(data.total || 0);
+      setSkip(append ? skip + limit : limit);
+    } catch {
+      // fall back to empty
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPosts(); }, []);
+
+  const loadMore = () => fetchPosts(true);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -52,7 +52,7 @@ export default function FeedPage() {
       </Link>
 
       <h1 className="text-3xl font-bold mb-6">Feed</h1>
-      <ActivityFeed posts={posts} loadMore={() => {}} hasMore={false} />
+      <ActivityFeed posts={posts} loadMore={loadMore} hasMore={posts.length < total} loading={loading} />
     </div>
   );
 }
