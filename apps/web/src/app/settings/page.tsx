@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/ta
 import { useAuth } from "@/src/lib/auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import { api } from "@/src/lib/api-client";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -25,9 +26,14 @@ export default function SettingsPage() {
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSaving(false);
-    toast.success("Profile updated");
+    try {
+      await api.patch("/users/me", { full_name: profile.fullName, email: profile.email });
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -37,10 +43,18 @@ export default function SettingsPage() {
       return;
     }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSaving(false);
-    toast.success("Password changed");
-    setPasswords({ current: "", new: "", confirm: "" });
+    try {
+      await api.post("/auth/change-password", {
+        current_password: passwords.current,
+        new_password: passwords.new,
+      });
+      toast.success("Password changed");
+      setPasswords({ current: "", new: "", confirm: "" });
+    } catch {
+      toast.error("Failed to change password");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

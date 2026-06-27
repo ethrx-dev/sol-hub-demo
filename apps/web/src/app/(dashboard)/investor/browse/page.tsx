@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, DollarSign } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/src/components/ui/avatar";
+import { Skeleton } from "@/src/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -14,41 +15,28 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { toast } from "sonner";
-
-const mockProjects = [
-  {
-    id: "1",
-    title: "GreenGrid AI",
-    tagline: "AI-powered energy optimization for smart grids",
-    innovatorName: "Alex Rivera",
-    sectors: ["CleanTech", "AI/ML"],
-    fundingGoal: 50000,
-    fundingRaised: 15000,
-    stage: "Prototype",
-  },
-  {
-    id: "2",
-    title: "HealthBridge",
-    tagline: "Telemedicine platform for rural communities",
-    innovatorName: "Sarah Chen",
-    sectors: ["HealthTech"],
-    fundingGoal: 75000,
-    fundingRaised: 25000,
-    stage: "Early Traction",
-  },
-];
+import { api } from "@/src/lib/api-client";
 
 const SECTORS = ["CleanTech", "HealthTech", "FinTech", "EdTech", "AI/ML"];
 
 export default function InvestorBrowsePage() {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sector, setSector] = useState("all");
 
-  const filtered = mockProjects.filter((p) => {
-    if (sector !== "all" && !p.sectors.includes(sector)) return false;
+  useEffect(() => {
+    api.get("/projects/?limit=50")
+      .then((data: any) => setProjects(data.items || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = projects.filter((p) => {
+    if (sector !== "all" && p.sector !== sector) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!p.title.toLowerCase().includes(q) && !p.tagline.toLowerCase().includes(q))
+      if (!p.title.toLowerCase().includes(q) && !(p.tagline || "").toLowerCase().includes(q))
         return false;
     }
     return true;
@@ -86,14 +74,28 @@ export default function InvestorBrowsePage() {
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-3 h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           No projects available.
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {filtered.map((project) => {
-            const progress = (project.fundingRaised / project.fundingGoal) * 100;
+            const goal = project.target_amount || 0;
+            const raised = project.raised_amount || 0;
+            const progress = goal > 0 ? (raised / goal) * 100 : 0;
             return (
               <Card key={project.id}>
                 <CardContent className="p-6">
@@ -104,15 +106,15 @@ export default function InvestorBrowsePage() {
                     </div>
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>
-                        {project.innovatorName.split(" ").map((n) => n[0]).join("")}
+                        {project.title.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {project.sectors.map((s) => (
-                      <Badge key={s} variant="secondary">{s}</Badge>
-                    ))}
+                    {project.sector && (
+                      <Badge variant="secondary">{project.sector}</Badge>
+                    )}
                     <Badge variant="outline">{project.stage}</Badge>
                   </div>
 
@@ -120,7 +122,7 @@ export default function InvestorBrowsePage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Funding</span>
                       <span className="font-medium">
-                        ${project.fundingRaised.toLocaleString()} / ${project.fundingGoal.toLocaleString()}
+                        ${raised.toLocaleString()} / ${goal.toLocaleString()}
                       </span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -133,9 +135,14 @@ export default function InvestorBrowsePage() {
 
                   <Button
                     className="mt-4 w-full"
-                    onClick={() =>
-                      toast.success("Investment interest sent!")
-                    }
+                    onClick={async () => {
+                      try {
+                        await api.post("/matches/", { project_id: project.id, status: "pending" });
+                        toast.success("Investment interest sent!");
+                      } catch {
+                        toast.error("Failed to send interest");
+                      }
+                    }}
                   >
                     <DollarSign className="mr-2 h-4 w-4" />
                     Express Interest

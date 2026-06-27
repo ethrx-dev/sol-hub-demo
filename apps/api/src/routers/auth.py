@@ -15,6 +15,7 @@ from src.schemas.auth import (
     LoginRequest,
     TokenResponse,
     RefreshRequest,
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
     UserResponse,
@@ -122,6 +123,16 @@ async def logout(body: RefreshRequest, db: DbSession):
     stored = result.scalar_one_or_none()
     if stored:
         stored.is_revoked = True
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(body: ChangePasswordRequest, db: DbSession, current_user: CurrentUser):
+    from src.utils.security import hash_password, verify_password
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(body.new_password)
+    await db.flush()
+    return {"detail": "Password changed successfully"}
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)

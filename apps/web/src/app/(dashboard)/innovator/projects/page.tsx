@@ -1,51 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/src/components/shared/project-card";
+import { Card, CardContent } from "@/src/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
-
-interface Project {
-  id: string;
-  title: string;
-  tagline: string;
-  innovatorName: string;
-  innovatorAvatar?: string;
-  sectors: string[];
-  fundingGoal: number;
-  fundingRaised: number;
-  status: "draft" | "submitted" | "reviewing" | "approved" | "matched" | "funded";
-  stage: string;
-}
-
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    title: "GreenGrid AI",
-    tagline: "AI-powered energy optimization for smart grids",
-    innovatorName: "Alex Rivera",
-    sectors: ["CleanTech", "AI/ML"],
-    fundingGoal: 50000,
-    fundingRaised: 15000,
-    status: "approved",
-    stage: "Prototype",
-  },
-  {
-    id: "2",
-    title: "HealthBridge",
-    tagline: "Telemedicine platform for rural communities",
-    innovatorName: "Alex Rivera",
-    sectors: ["HealthTech"],
-    fundingGoal: 75000,
-    fundingRaised: 0,
-    status: "draft",
-    stage: "Idea",
-  },
-];
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { api } from "@/src/lib/api-client";
+import { useAuth } from "@/src/lib/auth";
 
 export default function ProjectsPage() {
-  const [projects] = useState<Project[]>(mockProjects);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/projects/?limit=50")
+      .then((data: any) => setProjects(data.items || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -65,6 +40,19 @@ export default function ProjectsPage() {
         </Link>
       </div>
 
+      {loading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-3 h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -86,7 +74,19 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
               {projects.map((project) => (
-                <ProjectCard key={project.id} {...project} />
+                <ProjectCard
+                  key={project.id}
+                  id={project.id}
+                  title={project.title}
+                  tagline={project.tagline || ""}
+                  innovatorName={user?.full_name || ""}
+                  innovatorAvatar={user?.avatar_url}
+                  sectors={project.sector ? [project.sector] : []}
+                  fundingGoal={project.target_amount || 0}
+                  fundingRaised={project.raised_amount || 0}
+                  status={project.status}
+                  stage={project.stage}
+                />
               ))}
             </div>
           )}
@@ -111,6 +111,7 @@ export default function ProjectsPage() {
           </div>
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }
