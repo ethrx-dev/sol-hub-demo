@@ -1,62 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MatchCard } from "@/src/components/shared/match-card";
+import { Card, CardContent } from "@/src/components/ui/card";
+import { Skeleton } from "@/src/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { toast } from "sonner";
-
-interface Match {
-  id: string;
-  projectTitle: string;
-  projectTagline: string;
-  matchedUserName: string;
-  matchedUserAvatar?: string;
-  matchedUserRole: string;
-  status: "pending" | "accepted" | "declined" | "active";
-}
-
-const mockMatches: Match[] = [
-  {
-    id: "1",
-    projectTitle: "GreenGrid AI",
-    projectTagline: "AI-powered energy optimization for smart grids",
-    matchedUserName: "Alex Rivera",
-    matchedUserRole: "innovator",
-    status: "pending",
-  },
-  {
-    id: "2",
-    projectTitle: "HealthBridge",
-    projectTagline: "Telemedicine platform for rural communities",
-    matchedUserName: "Sarah Chen",
-    matchedUserRole: "innovator",
-    status: "active",
-  },
-  {
-    id: "3",
-    projectTitle: "EduFuture",
-    projectTagline: "Personalized learning paths powered by AI",
-    matchedUserName: "James Wilson",
-    matchedUserRole: "innovator",
-    status: "accepted",
-  },
-];
+import { api } from "@/src/lib/api-client";
 
 export default function MentorMatchesPage() {
-  const [matches, setMatches] = useState<Match[]>(mockMatches);
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAccept = (id: string) => {
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: "accepted" as const } : m))
-    );
-    toast.success("Match accepted!");
+  const fetchMatches = () => {
+    api.get("/matches/?limit=50")
+      .then((data: any) => setMatches(data.items || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  const handleDecline = (id: string) => {
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: "declined" as const } : m))
-    );
-    toast.info("Match declined");
+  useEffect(() => { fetchMatches(); }, []);
+
+  const handleAccept = async (id: string) => {
+    try {
+      await api.patch(`/matches/${id}`, { status: "accepted" });
+      setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: "accepted" } : m)));
+      toast.success("Match accepted!");
+    } catch {
+      toast.error("Failed to accept match");
+    }
+  };
+
+  const handleDecline = async (id: string) => {
+    try {
+      await api.patch(`/matches/${id}`, { status: "declined" });
+      setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: "declined" } : m)));
+      toast.info("Match declined");
+    } catch {
+      toast.error("Failed to decline match");
+    }
   };
 
   const filterByStatus = (status: string) =>
@@ -89,7 +71,12 @@ export default function MentorMatchesPage() {
                 {filterByStatus(tab).map((match) => (
                   <MatchCard
                     key={match.id}
-                    {...match}
+                    id={match.id}
+                    projectTitle={match.project_id || "Unknown Project"}
+                    projectTagline=""
+                    matchedUserName={match.mentor_id || match.investor_id || "Unknown"}
+                    matchedUserRole={match.mentor_id ? "mentor" : "investor"}
+                    status={match.status}
                     onAccept={() => handleAccept(match.id)}
                     onDecline={() => handleDecline(match.id)}
                   />
