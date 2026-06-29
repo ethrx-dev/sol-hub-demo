@@ -10,7 +10,7 @@ from src.models.document import Document
 from src.schemas.project import ProjectCreateRequest, ProjectUpdateRequest, ProjectResponse
 from src.schemas.workspace import DocumentResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
-from src.utils.file_validator import validate_file, generate_storage_key
+from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
 from src.utils.storage import upload_file
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -147,6 +147,7 @@ async def upload_attachment(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the project owner can add attachments")
 
     mime = validate_file(file)
+    validate_file_size(file)
     storage_key = generate_storage_key(file, mime)
     data = await file.read()
     url = await upload_file(storage_key, data, mime)

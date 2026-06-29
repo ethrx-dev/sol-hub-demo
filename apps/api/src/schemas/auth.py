@@ -1,17 +1,27 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from .common import BaseResponseWithUUID
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
     full_name: str
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
 
 
 class TokenResponse(BaseModel):
