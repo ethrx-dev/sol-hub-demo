@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MessageSquare, Users, Image, Video, Plus, UserPlus, Newspaper, MessageCircle, Calendar, Images } from "lucide-react";
+import { MessageSquare, Users, Image, Video, Plus, UserPlus, Newspaper, MessageCircle, Calendar, Images, BookOpen } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -187,6 +187,14 @@ export default function HubPage() {
               <TabsTrigger value="galleries" className="gap-2">
                 <Images className="h-4 w-4" />
                 Galleries
+              </TabsTrigger>
+            </Link>
+          )}
+          {isFeatureEnabled("document_library") && (
+            <Link href="/hub/documents">
+              <TabsTrigger value="documents" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                Documents
               </TabsTrigger>
             </Link>
           )}

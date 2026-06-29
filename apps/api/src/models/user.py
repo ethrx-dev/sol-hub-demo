@@ -52,3 +52,4 @@ class User(Base):
     organized_events = relationship("Event", back_populates="organizer", cascade="all, delete-orphan")
     event_attendances = relationship("EventAttendee", back_populates="user", cascade="all, delete-orphan")
     albums = relationship("Album", back_populates="author", cascade="all, delete-orphan")
+    documents = relationship("DocLibraryItem", back_populates="author", cascade="all, delete-orphan")
