@@ -23,6 +23,7 @@ from src.models.webhook_event import WebhookEvent
 from src.models.connection import Connection
 from src.models.forum import ForumCategory, ForumThread, ForumReply
 from src.models.event import Event, EventAttendee
+from src.models.gallery import Album, AlbumMedia
 
 __all__ = [
     "User",
@@ -51,4 +52,6 @@ __all__ = [
     "ForumReply",
     "Event",
     "EventAttendee",
+    "Album",
+    "AlbumMedia",
 ]
