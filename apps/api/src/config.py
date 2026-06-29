@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ADMIN_SEED_KEY: str = ""
 
     ENABLED_FEATURES: str = (
-        "connections,forums,events,galleries,document_library,blog"
+        "connections,forums,events,galleries,document_library,blog,reporting"
     )
 
     class Config:

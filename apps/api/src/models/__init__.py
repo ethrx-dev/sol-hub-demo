@@ -27,6 +27,7 @@ from src.models.gallery import Album, AlbumMedia
 from src.models.doc_library import DocCategory, DocLibraryItem
 from src.models.blog import BlogCategory, BlogPost
 from src.models.activity import ActivityLog
+from src.models.moderation import Report, Block
 
 __all__ = [
     "User",
@@ -62,4 +63,6 @@ __all__ = [
     "BlogCategory",
     "BlogPost",
     "ActivityLog",
+    "Report",
+    "Block",
 ]
