@@ -258,4 +258,6 @@ async def rsvp_event(
         db.add(attendee)
 
     await db.flush()
+    from src.routers.activity import record_activity
+    await record_activity(db, current_user.id, "event_rsvped", f"RSVPed to event '{event.title}'", target_type="event", target_id=str(event_id))
     return {"status": body.status.value}

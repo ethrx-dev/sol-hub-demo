@@ -122,6 +122,9 @@ async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(ge
     db.add(post)
     await db.flush()
     await db.refresh(post)
+    from src.routers.activity import record_activity
+    if body.status == "published":
+        await record_activity(db, current_user.id, "blog_published", f"Published blog post '{post.title}'", target_type="blog_post", target_id=str(post.id))
     return BlogPostResponse(
         id=post.id, title=post.title, slug=post.slug, content=post.content,
         excerpt=post.excerpt, cover_image=post.cover_image,

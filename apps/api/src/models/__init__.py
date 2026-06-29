@@ -26,6 +26,7 @@ from src.models.event import Event, EventAttendee
 from src.models.gallery import Album, AlbumMedia
 from src.models.doc_library import DocCategory, DocLibraryItem
 from src.models.blog import BlogCategory, BlogPost
+from src.models.activity import ActivityLog
 
 __all__ = [
     "User",
@@ -60,4 +61,5 @@ __all__ = [
     "DocLibraryItem",
     "BlogCategory",
     "BlogPost",
+    "ActivityLog",
 ]

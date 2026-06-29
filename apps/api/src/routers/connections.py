@@ -33,6 +33,8 @@ async def follow_user(user_id: uuid.UUID, db: DbSession, current_user: CurrentUs
     conn = Connection(follower_id=current_user.id, following_id=user_id)
     db.add(conn)
     await db.flush()
+    from src.routers.activity import record_activity
+    await record_activity(db, current_user.id, "connection_made", f"Started following {user.full_name or user.email}", target_type="user", target_id=str(user_id))
     return {"detail": "User followed successfully"}
 
 

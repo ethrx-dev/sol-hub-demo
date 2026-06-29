@@ -213,6 +213,8 @@ async def join_group(group_id: uuid.UUID, db: DbSession, current_user: CurrentUs
         role="member",
     ))
     await db.flush()
+    from src.routers.activity import record_activity
+    await record_activity(db, current_user.id, "group_joined", f"Joined group '{group.name}'", target_type="group", target_id=str(group_id))
     return {"detail": "Joined group successfully"}
 
 

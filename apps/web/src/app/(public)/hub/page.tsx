@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MessageSquare, Users, Image, Video, Plus, UserPlus, Newspaper, MessageCircle, Calendar, Images, BookOpen } from "lucide-react";
+import { MessageSquare, Users, Image, Video, Plus, UserPlus, Newspaper, MessageCircle, Calendar, Images, BookOpen, Activity } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { ActivityFeed } from "@/src/components/shared/activity-feed";
+import { ActivityStream } from "@/src/components/shared/activity-stream";
 import { PostModal } from "@/src/components/shared/post-modal";
 import { api } from "@/src/lib/api-client";
 import { useAuth } from "@/src/lib/auth";
@@ -206,6 +207,10 @@ export default function HubPage() {
               </TabsTrigger>
             </Link>
           )}
+          <TabsTrigger value="activity" className="gap-2">
+            <Activity className="h-4 w-4" />
+            Activity
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="feed" className="mt-6">
@@ -336,6 +341,9 @@ export default function HubPage() {
               No videos shared yet. Add a video URL to a post to see it here.
             </div>
           )}
+        </TabsContent>
+        <TabsContent value="activity" className="mt-6">
+          <ActivityStream />
         </TabsContent>
       </Tabs>
     </div>
