@@ -610,4 +610,4 @@ SPACES OF LEARNING IS A PRIVATE, MEMBERSHIP-BASED ORGANIZATION AND IS FUNCTIONIN
 
 ---
 
-*Architecture document: `~/Documents/ETHERIX/SOL-HUB-Standalone-Architecture.md`*
+*Architecture by Next Level Development*
