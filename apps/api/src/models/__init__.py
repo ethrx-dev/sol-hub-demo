@@ -24,6 +24,7 @@ from src.models.connection import Connection
 from src.models.forum import ForumCategory, ForumThread, ForumReply
 from src.models.event import Event, EventAttendee
 from src.models.gallery import Album, AlbumMedia
+from src.models.doc_library import DocCategory, DocLibraryItem
 
 __all__ = [
     "User",
@@ -54,4 +55,6 @@ __all__ = [
     "EventAttendee",
     "Album",
     "AlbumMedia",
+    "DocCategory",
+    "DocLibraryItem",
 ]
