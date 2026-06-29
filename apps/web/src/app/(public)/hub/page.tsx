@@ -198,6 +198,14 @@ export default function HubPage() {
               </TabsTrigger>
             </Link>
           )}
+          {isFeatureEnabled("blog") && (
+            <Link href="/hub/blog">
+              <TabsTrigger value="blog" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                Blog
+              </TabsTrigger>
+            </Link>
+          )}
         </TabsList>
 
         <TabsContent value="feed" className="mt-6">

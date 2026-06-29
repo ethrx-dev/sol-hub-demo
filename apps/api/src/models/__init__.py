@@ -25,6 +25,7 @@ from src.models.forum import ForumCategory, ForumThread, ForumReply
 from src.models.event import Event, EventAttendee
 from src.models.gallery import Album, AlbumMedia
 from src.models.doc_library import DocCategory, DocLibraryItem
+from src.models.blog import BlogCategory, BlogPost
 
 __all__ = [
     "User",
@@ -57,4 +58,6 @@ __all__ = [
     "AlbumMedia",
     "DocCategory",
     "DocLibraryItem",
+    "BlogCategory",
+    "BlogPost",
 ]
