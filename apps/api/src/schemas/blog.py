@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.models.blog import PostStatus
 
@@ -43,12 +43,12 @@ class BlogPostResponse(BaseModel):
 
 
 class CreateBlogPostRequest(BaseModel):
-    title: str
-    content: str
-    excerpt: str | None = None
-    cover_image: str | None = None
+    title: str = Field(max_length=255)
+    content: str = Field(max_length=100000)
+    excerpt: str | None = Field(None, max_length=500)
+    cover_image: str | None = Field(None, max_length=512)
     category_id: str | None = None
-    tags: str = ""
+    tags: str = Field(default="", max_length=500)
     status: PostStatus = PostStatus.draft
     is_featured: bool = False
 

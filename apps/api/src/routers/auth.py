@@ -95,7 +95,8 @@ async def login(request: Request, body: LoginRequest, db: DbSession):
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(body: RefreshRequest, db: DbSession):
+@limiter.limit("10/minute")
+async def refresh(request: Request, body: RefreshRequest, db: DbSession):
     token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
     result = await db.execute(
         select(RefreshToken).where(
@@ -142,7 +143,8 @@ async def logout(body: RefreshRequest, db: DbSession):
 
 
 @router.post("/change-password", status_code=status.HTTP_200_OK)
-async def change_password(body: ChangePasswordRequest, db: DbSession, current_user: CurrentUser):
+@limiter.limit("5/minute")
+async def change_password(request: Request, body: ChangePasswordRequest, db: DbSession, current_user: CurrentUser):
     from src.utils.security import hash_password, verify_password
     if not verify_password(body.current_password, current_user.password_hash):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")

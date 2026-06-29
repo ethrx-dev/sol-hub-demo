@@ -1,7 +1,10 @@
 import json
 import uuid
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select
 
 from src.database import async_session
@@ -26,6 +29,7 @@ async def workspace_ws(websocket: WebSocket, project_id: str):
         payload = decode_token(token)
         user_id = payload.get("sub")
     except Exception:
+        logger.warning("WebSocket auth failed", exc_info=True)
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
@@ -144,6 +148,6 @@ async def workspace_ws(websocket: WebSocket, project_id: str):
     except WebSocketDisconnect:
         pass
     except Exception:
-        pass
+        logger.error("WebSocket message handler error", exc_info=True)
     finally:
         await manager.leave(room, websocket)

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.models.event import EventStatus, AttendeeStatus
 
@@ -47,14 +47,14 @@ class EventAttendeeResponse(BaseModel):
 
 
 class CreateEventRequest(BaseModel):
-    title: str
-    description: str | None = None
-    location: str | None = None
+    title: str = Field(max_length=255)
+    description: str | None = Field(None, max_length=10000)
+    location: str | None = Field(None, max_length=255)
     start_time: datetime
     end_time: datetime | None = None
     is_virtual: bool = False
-    meeting_url: str | None = None
-    cover_image_url: str | None = None
+    meeting_url: str | None = Field(None, max_length=512)
+    cover_image_url: str | None = Field(None, max_length=512)
     max_attendees: int | None = None
     status: EventStatus = EventStatus.draft
 

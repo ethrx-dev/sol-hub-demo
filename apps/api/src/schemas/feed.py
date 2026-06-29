@@ -1,10 +1,10 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from .common import BaseResponseWithUUID
 
 
 class CreatePostRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=10000)
     media_urls: list[str] = []
     privacy: str = "public"
 
@@ -23,17 +23,17 @@ class CommentResponse(BaseResponseWithUUID):
 
 
 class CreateCommentRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=5000)
 
 
 class UpdatePostRequest(BaseModel):
-    content: str | None = None
+    content: str | None = Field(None, max_length=10000)
     media_urls: list[str] | None = None
     privacy: str | None = None
 
 
 class UpdateCommentRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=5000)
 
 
 class PostResponse(BaseResponseWithUUID):
