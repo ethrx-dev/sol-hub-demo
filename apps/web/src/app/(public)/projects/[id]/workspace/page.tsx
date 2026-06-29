@@ -2,9 +2,17 @@
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, DollarSign, Upload, FileText, Download } from "lucide-react";
+import { ArrowLeft, DollarSign, Upload, FileText, Download, Plus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/src/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { MilestoneTimeline } from "@/src/components/shared/milestone-timeline";
@@ -299,18 +307,94 @@ export default function WorkspacePage({
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/investor/portfolio`}>
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    View Full Financial Report
-                  </Link>
-                </Button>
+                <div className="flex gap-3">
+                  <Button variant="outline" asChild>
+                    <Link href={`/investor/portfolio`}>
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      View Full Financial Report
+                    </Link>
+                  </Button>
+                  <CommitFundingButton projectId={id} />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         )}
       </Tabs>
     </div>
+  );
+}
+
+function CommitFundingButton({ projectId }: { projectId: string }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleCommit = async () => {
+    const num = parseFloat(amount);
+    if (!num || num <= 0) return;
+    setSubmitting(true);
+    try {
+      await api.post("/investments/", {
+        project_id: projectId,
+        amount: num,
+        notes: notes || null,
+      });
+      toast.success("Funding committed!");
+      setOpen(false);
+      setAmount("");
+      setNotes("");
+    } catch {
+      toast.error("Failed to commit funding");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Commit Funding
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Commit Funding</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Amount ($)</label>
+            <Input
+              type="number"
+              min="1"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="1000"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Notes (optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any conditions or notes..."
+              className="h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          <Button
+            onClick={handleCommit}
+            disabled={submitting || !amount || parseFloat(amount) <= 0}
+            className="w-full"
+          >
+            {submitting ? "Committing..." : "Commit"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
