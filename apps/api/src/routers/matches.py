@@ -23,10 +23,22 @@ async def list_my_matches(
     limit: int = Query(20, ge=1, le=100),
 ):
     query = select(Match).where(
-        or_(Match.mentor_id == current_user.id, Match.investor_id == current_user.id)
+        or_(
+            Match.mentor_id == current_user.id,
+            Match.investor_id == current_user.id,
+            Match.project_id.in_(
+                select(Project.id).where(Project.innovator_id == current_user.id, Project.is_deleted == False)
+            ),
+        )
     )
     count_query = select(func.count(Match.id)).where(
-        or_(Match.mentor_id == current_user.id, Match.investor_id == current_user.id)
+        or_(
+            Match.mentor_id == current_user.id,
+            Match.investor_id == current_user.id,
+            Match.project_id.in_(
+                select(Project.id).where(Project.innovator_id == current_user.id, Project.is_deleted == False)
+            ),
+        )
     )
 
     total = await db.scalar(count_query)

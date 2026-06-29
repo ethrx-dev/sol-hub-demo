@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
-import { buttonVariants } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
@@ -72,10 +72,11 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
   return (
     <div className="space-y-4">
       {posts.map((post, index) => (
-        <div
+        <Link
           key={post.id}
+          href={`/hub/feed/${post.id}`}
           ref={index === posts.length - 1 ? lastPostRef : null}
-          className="rounded-lg border bg-background p-4"
+          className="block rounded-lg border bg-background p-4 transition-colors hover:border-primary/50"
         >
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
@@ -126,7 +127,7 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
               <Share2 className="h-4 w-4" />
             </button>
           </div>
-        </div>
+        </Link>
       ))}
 
       {loading && (

@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { useAuth, type UserRole } from "@/src/lib/auth";
@@ -31,6 +32,9 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/innovator", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: "/innovator/projects", label: "My Projects", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/innovator/projects/new", label: "Submit Idea", icon: <Lightbulb className="h-4 w-4" /> },
+    { href: "/innovator/matches", label: "My Matches", icon: <Handshake className="h-4 w-4" /> },
+    { href: "/workspaces", label: "Workspaces", icon: <FolderKanban className="h-4 w-4" /> },
+    { href: "/notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
     { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
   ],
@@ -38,13 +42,18 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/mentor", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: "/mentor/browse", label: "Browse Projects", icon: <Search className="h-4 w-4" /> },
     { href: "/mentor/matches", label: "My Matches", icon: <Handshake className="h-4 w-4" /> },
+    { href: "/workspaces", label: "Workspaces", icon: <FolderKanban className="h-4 w-4" /> },
+    { href: "/notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
     { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
   ],
   investor: [
     { href: "/investor", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: "/investor/browse", label: "Browse Projects", icon: <Search className="h-4 w-4" /> },
+    { href: "/investor/matches", label: "My Matches", icon: <Handshake className="h-4 w-4" /> },
     { href: "/investor/portfolio", label: "My Investments", icon: <DollarSign className="h-4 w-4" /> },
+    { href: "/workspaces", label: "Workspaces", icon: <FolderKanban className="h-4 w-4" /> },
+    { href: "/notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
     { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
   ],
