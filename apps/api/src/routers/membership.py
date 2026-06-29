@@ -4,48 +4,33 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
 from src.config import settings
-from src.deps import DbSession, CurrentUser
+from src.deps import DbSession, CurrentUser, CurrentAdmin
 from src.models.user import User
 from src.models.subscription import Subscription
 from src.schemas.membership import PlanResponse, CheckoutRequest, CheckoutResponse, PortalResponse
 
 router = APIRouter(prefix="/api/membership", tags=["membership"])
 
-PLANS = [
-    PlanResponse(
-        tier="free",
-        name="Free",
-        price=0.0,
-        description="Basic access to SOL Hub",
-        features=["Browse projects", "View resources", "Join public groups"],
-    ),
-    PlanResponse(
-        tier="innovator",
-        name="Innovator",
-        price=19.99,
-        description="For climate innovators",
-        features=["Create projects", "Apply to matches", "Access workspace"],
-    ),
-    PlanResponse(
-        tier="mentor",
-        name="Mentor",
-        price=29.99,
-        description="For mentors and advisors",
-        features=["Match with projects", "Full workspace access", "Create resources"],
-    ),
-    PlanResponse(
-        tier="investor",
-        name="Investor",
-        price=49.99,
-        description="For investors and funders",
-        features=["Match with projects", "Full workspace access", "Investment dashboard"],
-    ),
+PLANS: list[dict] = [
+    {"tier": "free", "name": "Free", "price": 0.0, "description": "Basic access to SOL Hub", "features": ["Browse projects", "View resources", "Join public groups"]},
+    {"tier": "innovator", "name": "Innovator", "price": 19.99, "description": "For climate innovators", "features": ["Create projects", "Apply to matches", "Access workspace"]},
+    {"tier": "mentor", "name": "Mentor", "price": 29.99, "description": "For mentors and advisors", "features": ["Match with projects", "Full workspace access", "Create resources"]},
+    {"tier": "investor", "name": "Investor", "price": 49.99, "description": "For investors and funders", "features": ["Match with projects", "Full workspace access", "Investment dashboard"]},
 ]
 
 
 @router.get("/plans", response_model=list[PlanResponse])
 async def get_plans():
-    return PLANS
+    return [PlanResponse(**p) for p in PLANS]
+
+
+@router.patch("/plans/{tier}", response_model=PlanResponse)
+async def update_plan(tier: str, body: PlanResponse, _: CurrentAdmin):
+    for plan in PLANS:
+        if plan["tier"] == tier:
+            plan.update(body.model_dump(exclude_unset=True))
+            return PlanResponse(**plan)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
@@ -74,6 +59,27 @@ async def create_checkout_session(body: CheckoutRequest, db: DbSession, current_
     )
 
     return CheckoutResponse(url=session.url)
+
+
+@router.get("/my-subscription")
+async def get_my_subscription(db: DbSession, current_user: CurrentUser):
+    result = await db.execute(
+        select(Subscription).where(Subscription.user_id == current_user.id)
+    )
+    sub = result.scalar_one_or_none()
+    if not sub:
+        return {
+            "tier": current_user.membership_tier or "free",
+            "status": "inactive",
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+        }
+    return {
+        "tier": sub.tier or current_user.membership_tier or "free",
+        "status": sub.status,
+        "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
+        "cancel_at_period_end": sub.cancel_at_period_end,
+    }
 
 
 @router.post("/portal", response_model=PortalResponse)

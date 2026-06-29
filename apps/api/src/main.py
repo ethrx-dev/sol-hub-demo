@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from src.config import settings
 from src.middleware.security import SecurityHeadersMiddleware
+from src.middleware.rate_limit import add_rate_limit_middleware
 
 
 @asynccontextmanager
@@ -29,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SecurityHeadersMiddleware)
+add_rate_limit_middleware(app)
 
 
 @app.exception_handler(Exception)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -138,34 +139,36 @@ export function MemberDirectory({ members, loading }: MemberDirectoryProps) {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginated.map((member) => (
-              <Card key={member.id}>
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.avatarUrl} />
-                      <AvatarFallback>
-                        {member.fullName.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{member.fullName}</h3>
-                      <Badge variant="secondary" className="mt-1 capitalize">
-                        {member.role}
-                      </Badge>
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                        {member.headline}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {member.sectors.slice(0, 3).map((s) => (
-                          <Badge key={s} variant="outline" className="text-[10px]">
-                            {s}
-                          </Badge>
-                        ))}
+              <Link key={member.id} href={`/users/${member.id}`}>
+                <Card className="cursor-pointer transition-shadow hover:shadow-md">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={member.avatarUrl} />
+                        <AvatarFallback>
+                          {member.fullName.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{member.fullName}</h3>
+                        <Badge variant="secondary" className="mt-1 capitalize">
+                          {member.role}
+                        </Badge>
+                        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                          {member.headline}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {member.sectors.slice(0, 3).map((s) => (
+                            <Badge key={s} variant="outline" className="text-[10px]">
+                              {s}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 

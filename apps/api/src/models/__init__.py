@@ -12,6 +12,8 @@ from src.models.group_member import GroupMember
 from src.models.message import Message
 from src.models.resource import Resource
 from src.models.notification import Notification
+from src.models.notification_preference import NotificationPreference
+from src.models.document import Document
 from src.models.subscription import Subscription
 from src.models.refresh_token import RefreshToken
 from src.models.password_reset_token import PasswordResetToken
@@ -31,5 +33,7 @@ __all__ = [
     "Message",
     "Resource",
     "Notification",
+    "NotificationPreference",
+    "Document",
     "Subscription",
 ]

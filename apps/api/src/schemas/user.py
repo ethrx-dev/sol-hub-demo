@@ -6,6 +6,7 @@ from .common import BaseResponseWithUUID
 class UpdateProfileRequest(BaseModel):
     full_name: str | None = None
     bio: str | None = None
+    role: str | None = None
     skills: list[str] | None = None
     sectors_of_interest: list[str] | None = None
     onboarding_completed: bool | None = None

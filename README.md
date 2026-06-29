@@ -305,7 +305,8 @@ curl -X POST http://localhost:8000/api/admin/seed \
 | Notifications | `/api/notifications` | list, mark read |
 | Membership | `/api/membership` | plans, checkout, Stripe webhooks |
 | Media | `/api/media` | upload |
-| Admin | `/api/admin` | seed (one-time), stats, users, projects, matches |
+| Notification Prefs | `/api/users/me/notification-preferences` | get, update |
+| Admin | `/api/admin` | seed (one-time), stats, users, projects, matches, groups, posts, resources |
 
 ---
 
@@ -334,11 +335,22 @@ The seed endpoint is idempotent — it rejects any subsequent requests with `409
 | Frontend Page | Endpoint | What You Can Do |
 |---|---|---|
 | `/admin` | `GET /api/admin/stats` | View platform statistics |
-| `/admin/users` | `GET /api/admin/users`, `PATCH /api/admin/users/{id}/role` | List all users, change roles |
-| `/admin/projects` | `GET /api/admin/projects`, `PATCH /api/admin/projects/{id}/status` | List all projects, change status |
+| `/admin/users` | `GET /api/admin/users`, `PATCH .../role` | List all users, change roles |
+| `/admin/projects` | `GET /api/admin/projects`, `PATCH .../status` | List all projects, change status |
 | `/admin/matches` | `GET /api/admin/matches`, `POST /api/admin/matches` | List all matches, create matches |
+| `/admin/groups` | `GET /api/admin/groups`, `DELETE .../{id}` | Manage groups (super admin) |
+| `/admin/posts` | `GET /api/admin/posts`, `DELETE .../{id}` | Manage feed posts (super admin) |
+| `/admin/resources` | `GET /api/admin/resources`, `DELETE .../{id}` | Manage resources (super admin) |
 
-Admin routes are protected by the `CurrentAdmin` dependency and return `403 Forbidden` for non-admin users.
+### Super Admin
+
+The seeded admin has `is_super_admin: true` granting full access to all management features. Super admins can:
+- Promote/demote other users to super admin
+- Delete (deactivate) users
+- Delete groups, posts, and resources
+- Access all management pages
+
+Super admin status is indicated by an amber banner on admin pages and a `Crown` badge on the users table.
 
 ---
 

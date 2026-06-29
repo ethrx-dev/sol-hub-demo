@@ -6,8 +6,11 @@ from sqlalchemy import select, func, or_
 from src.deps import DbSession, CurrentUser
 from src.models.match import Match, MatchStatus
 from src.models.project import Project
+from src.models.user import User
 from src.schemas.match import MatchCreateRequest, MatchUpdateRequest, MatchResponse
 from src.schemas.common import PaginatedResponse
+from src.utils.email import send_match_notification
+from src.utils.notifications import create_notification
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
 
@@ -69,6 +72,17 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
     )
     db.add(match)
     await db.flush()
+
+    innovator = await db.get(User, project.innovator_id)
+    if innovator:
+        match_type = "mentor" if mentor_id else "investor"
+        await create_notification(
+            db, str(innovator.id), "New Match Interest",
+            f"A {match_type} is interested in your project \"{project.title}\"",
+            notification_type="match",
+        )
+        await send_match_notification(innovator.email, project.title, match_type)
+
     return match
 
 

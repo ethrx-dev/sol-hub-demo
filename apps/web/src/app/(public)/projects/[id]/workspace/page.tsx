@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, DollarSign } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
@@ -8,92 +8,85 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { MilestoneTimeline } from "@/src/components/shared/milestone-timeline";
+import { MilestoneModal } from "@/src/components/shared/milestone-modal";
 import { MessageThread } from "@/src/components/shared/message-thread";
 import { useAuth } from "@/src/lib/auth";
+import { useWorkspaceWs } from "@/src/hooks/use-workspace-ws";
+import { api } from "@/src/lib/api-client";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
-const milestones = [
-  {
-    id: "1",
-    title: "Market Research Complete",
-    description: "Complete market analysis and competitor research",
-    dueDate: "2026-03-15",
-    status: "completed" as const,
-    fundingAllocation: 5000,
-    totalFunding: 5000,
-  },
-  {
-    id: "2",
-    title: "MVP Development",
-    description: "Build minimum viable product",
-    dueDate: "2026-05-01",
-    status: "in_progress" as const,
-    fundingAllocation: 15000,
-    totalFunding: 20000,
-  },
-  {
-    id: "3",
-    title: "Beta Launch",
-    description: "Launch beta version to test users",
-    dueDate: "2026-07-01",
-    status: "pending" as const,
-    fundingAllocation: 10000,
-    totalFunding: 15000,
-  },
-  {
-    id: "4",
-    title: "Full Launch",
-    description: "Public launch and marketing campaign",
-    dueDate: "2026-09-01",
-    status: "pending" as const,
-    fundingAllocation: 10000,
-    totalFunding: 10000,
-  },
-];
+interface WorkspaceData {
+  project: { id: string; title: string } | null;
+  members: Array<{ id: string; full_name: string; role: string; avatar_url: string | null }>;
+}
 
-const messages = [
-  {
-    id: "1",
-    senderId: "mentor1",
-    senderName: "Mike Johnson",
-    content: "Great progress on the market research! Let's discuss the MVP requirements.",
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "2",
-    senderId: "user1",
-    senderName: "Alex Rivera",
-    content: "Thanks! I've drafted the initial specs. Should I share them here?",
-    timestamp: new Date(Date.now() - 43200000).toISOString(),
-  },
-  {
-    id: "3",
-    senderId: "mentor1",
-    senderName: "Mike Johnson",
-    content: "Yes, please do. I'll review and we can schedule a call to go over them.",
-    timestamp: new Date(Date.now() - 21600000).toISOString(),
-  },
-];
+interface MilestoneItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  due_date: string | null;
+  budget: number | null;
+  is_funding_trigger: boolean;
+  created_at: string;
+}
 
 export default function WorkspacePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  use(params);
+  const { id } = use(params);
   const { user } = useAuth();
-  const [chatMessages, setChatMessages] = useState(messages);
+  const { messages, sendMessage, connected, loading } = useWorkspaceWs(id);
+  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
+  const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
+  const [milestonesLoading, setMilestonesLoading] = useState(true);
+  const [wsLoading, setWsLoading] = useState(true);
   const isInvestor = user?.role === "investor";
 
-  const handleSend = (content: string) => {
-    const newMsg = {
-      id: String(Date.now()),
-      senderId: "user1",
-      senderName: user?.full_name || "You",
-      content,
-      timestamp: new Date().toISOString(),
-    };
-    setChatMessages((prev) => [...prev, newMsg]);
-  };
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<WorkspaceData>(`/projects/${id}/workspace/`)
+      .then(setWorkspace)
+      .catch(() => setWorkspace(null))
+      .finally(() => setWsLoading(false));
+  }, [id]);
+
+  const fetchMilestones = useCallback(() => {
+    if (!id) return;
+    api
+      .get<{ items: MilestoneItem[] }>(`/projects/${id}/milestones`)
+      .then((data) => setMilestones(data.items || []))
+      .catch(() => {})
+      .finally(() => setMilestonesLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    fetchMilestones();
+  }, [fetchMilestones]);
+
+  const senderName = user?.full_name || "You";
+  const currentUserId = user?.id || "unknown";
+
+  const chatMessages = messages.map((m) => ({
+    id: m.id,
+    senderId: m.sender_id,
+    senderName: m.sender_name,
+    content: m.content,
+    timestamp: m.created_at || new Date().toISOString(),
+  }));
+
+  if (wsLoading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <Skeleton className="mb-6 h-6 w-48" />
+        <Skeleton className="mb-8 h-10 w-96" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -108,9 +101,11 @@ export default function WorkspacePage({
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">GreenGrid AI Workspace</h1>
+            <h1 className="text-3xl font-bold">
+              {workspace?.project?.title || "Project Workspace"}
+            </h1>
             <p className="mt-1 text-muted-foreground">
-              AI-powered energy optimization for smart grids
+              {connected ? "🟢 Connected" : "🔴 Disconnected"}
             </p>
           </div>
           <Badge variant="success">Active</Badge>
@@ -134,17 +129,6 @@ export default function WorkspacePage({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <span className="text-xs text-muted-foreground">Stage</span>
-                  <p className="font-medium">Prototype</p>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground">Sectors</span>
-                  <div className="mt-1 flex gap-1.5">
-                    <Badge variant="secondary">CleanTech</Badge>
-                    <Badge variant="secondary">AI/ML</Badge>
-                  </div>
-                </div>
-                <div>
                   <span className="text-xs text-muted-foreground">Funding Goal</span>
                   <p className="text-2xl font-bold">$50,000</p>
                 </div>
@@ -162,11 +146,16 @@ export default function WorkspacePage({
                 <CardTitle>Team</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Innovator: Alex Rivera
-                  <br />
-                  Mentor: Mike Johnson
-                </p>
+                <div className="space-y-2">
+                  {workspace?.members?.map((m) => (
+                    <div key={m.id} className="flex items-center gap-2">
+                      <span className="text-sm font-medium capitalize">{m.role}:</span>
+                      <span className="text-sm text-muted-foreground">{m.full_name}</span>
+                    </div>
+                  )) || (
+                    <p className="text-sm text-muted-foreground">No members yet.</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -174,11 +163,30 @@ export default function WorkspacePage({
 
         <TabsContent value="milestones" className="mt-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Milestones</CardTitle>
+              <MilestoneModal projectId={id} onCreated={fetchMilestones} />
             </CardHeader>
             <CardContent>
-              <MilestoneTimeline milestones={milestones} />
+              {milestonesLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <MilestoneTimeline
+                  milestones={milestones.map((m) => ({
+                    id: m.id,
+                    title: m.title,
+                    description: m.description || "",
+                    dueDate: m.due_date || "",
+                    status: (m.status as "pending" | "in_progress" | "completed" | "overdue") || "pending",
+                    fundingAllocation: m.budget || 0,
+                    totalFunding: m.budget || 0,
+                  }))}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -201,8 +209,9 @@ export default function WorkspacePage({
             <CardContent className="p-0">
               <MessageThread
                 messages={chatMessages}
-                currentUserId="user1"
-                onSend={handleSend}
+                currentUserId={currentUserId}
+                onSend={sendMessage}
+                loading={loading}
               />
             </CardContent>
           </Card>
