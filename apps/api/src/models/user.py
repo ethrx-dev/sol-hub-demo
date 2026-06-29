@@ -47,3 +47,5 @@ class User(Base):
     subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
     following = relationship("Connection", back_populates="follower", foreign_keys="Connection.follower_id", cascade="all, delete-orphan")
     followers = relationship("Connection", back_populates="following", foreign_keys="Connection.following_id", cascade="all, delete-orphan")
+    forum_threads = relationship("ForumThread", back_populates="author", cascade="all, delete-orphan")
+    forum_replies = relationship("ForumReply", back_populates="author", cascade="all, delete-orphan")

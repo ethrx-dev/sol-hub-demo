@@ -51,9 +51,9 @@ export function MatchCard({
 
         <div className="mt-4 flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={matchedUserAvatar} />
+            <AvatarImage src={matchedUserAvatar ?? undefined} />
             <AvatarFallback>
-              {matchedUserName.split(" ").map((n) => n[0]).join("")}
+              {matchedUserName?.split(" ").map((n) => n[0]).join("") ?? "?"}
             </AvatarFallback>
           </Avatar>
           <div>
