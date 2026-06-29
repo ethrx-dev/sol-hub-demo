@@ -8,11 +8,11 @@ import { Card, CardContent } from "@/src/components/ui/card";
 interface MatchCardProps {
   id: string;
   projectTitle: string;
-  projectTagline: string;
-  matchedUserName: string;
-  matchedUserAvatar?: string;
-  matchedUserRole: string;
-  status: "pending" | "accepted" | "declined" | "active";
+  projectTagline?: string;
+  matchedUserName: string | null;
+  matchedUserAvatar?: string | null;
+  matchedUserRole: string | null;
+  status: string;
   onAccept?: () => void;
   onDecline?: () => void;
 }

@@ -89,6 +89,8 @@ async def get_workspace(project_id: uuid.UUID, db: DbSession, current_user: Curr
         documents=[DocumentResponse.model_validate(d) for d in documents],
         messages=[MessageResponse.model_validate(m) for m in messages],
         members=members,
+        target_amount=project.target_amount,
+        raised_amount=project.raised_amount or 0.0,
     )
 
 

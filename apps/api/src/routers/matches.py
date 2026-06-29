@@ -33,7 +33,38 @@ async def list_my_matches(
     result = await db.execute(
         query.order_by(Match.created_at.desc()).offset(skip).limit(limit)
     )
-    items = result.scalars().all()
+    matches = result.scalars().all()
+
+    items = []
+    for match in matches:
+        project = await db.get(Project, match.project_id)
+        project_title = project.title if project else None
+
+        matched_user = None
+        if match.mentor_id and match.mentor_id != current_user.id:
+            matched_user = await db.get(User, match.mentor_id)
+        elif match.investor_id and match.investor_id != current_user.id:
+            matched_user = await db.get(User, match.investor_id)
+        elif match.mentor_id:
+            matched_user = await db.get(User, match.mentor_id)
+        elif match.investor_id:
+            matched_user = await db.get(User, match.investor_id)
+
+        items.append(MatchResponse(
+            id=str(match.id),
+            project_id=str(match.project_id),
+            project_title=project_title,
+            mentor_id=str(match.mentor_id) if match.mentor_id else None,
+            investor_id=str(match.investor_id) if match.investor_id else None,
+            matched_user_name=matched_user.full_name if matched_user else None,
+            matched_user_avatar=matched_user.avatar_url if matched_user else None,
+            matched_user_role=matched_user.role if matched_user else None,
+            status=match.status.value if hasattr(match.status, 'value') else match.status,
+            notes=match.notes,
+            created_at=match.created_at,
+            updated_at=match.updated_at,
+        ))
+
     return PaginatedResponse(items=items, total=total or 0, skip=skip, limit=limit)
 
 
@@ -83,7 +114,30 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
         )
         await send_match_notification(innovator.email, project.title, match_type)
 
-    return match
+    matched_user = None
+    if mentor_id and mentor_id != current_user.id:
+        matched_user = await db.get(User, mentor_id)
+    elif investor_id and investor_id != current_user.id:
+        matched_user = await db.get(User, investor_id)
+    elif mentor_id:
+        matched_user = await db.get(User, mentor_id)
+    elif investor_id:
+        matched_user = await db.get(User, investor_id)
+
+    return MatchResponse(
+        id=str(match.id),
+        project_id=str(match.project_id),
+        project_title=project.title,
+        mentor_id=str(match.mentor_id) if match.mentor_id else None,
+        investor_id=str(match.investor_id) if match.investor_id else None,
+        matched_user_name=matched_user.full_name if matched_user else None,
+        matched_user_avatar=matched_user.avatar_url if matched_user else None,
+        matched_user_role=matched_user.role if matched_user else None,
+        status=match.status.value if hasattr(match.status, 'value') else match.status,
+        notes=match.notes,
+        created_at=match.created_at,
+        updated_at=match.updated_at,
+    )
 
 
 @router.patch("/{match_id}", response_model=MatchResponse)
@@ -102,7 +156,34 @@ async def update_match(match_id: uuid.UUID, body: MatchUpdateRequest, db: DbSess
 
     match.status = MatchStatus(body.status)
     await db.flush()
-    return match
+
+    project = await db.get(Project, match.project_id)
+    project_title = project.title if project else None
+
+    matched_user = None
+    if match.mentor_id and match.mentor_id != current_user.id:
+        matched_user = await db.get(User, match.mentor_id)
+    elif match.investor_id and match.investor_id != current_user.id:
+        matched_user = await db.get(User, match.investor_id)
+    elif match.mentor_id:
+        matched_user = await db.get(User, match.mentor_id)
+    elif match.investor_id:
+        matched_user = await db.get(User, match.investor_id)
+
+    return MatchResponse(
+        id=str(match.id),
+        project_id=str(match.project_id),
+        project_title=project_title,
+        mentor_id=str(match.mentor_id) if match.mentor_id else None,
+        investor_id=str(match.investor_id) if match.investor_id else None,
+        matched_user_name=matched_user.full_name if matched_user else None,
+        matched_user_avatar=matched_user.avatar_url if matched_user else None,
+        matched_user_role=matched_user.role if matched_user else None,
+        status=match.status.value if hasattr(match.status, 'value') else match.status,
+        notes=match.notes,
+        created_at=match.created_at,
+        updated_at=match.updated_at,
+    )
 
 
 @router.get("/{match_id}", response_model=MatchResponse)
@@ -111,4 +192,31 @@ async def get_match(match_id: uuid.UUID, db: DbSession, current_user: CurrentUse
     match = result.scalar_one_or_none()
     if not match:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
-    return match
+
+    project = await db.get(Project, match.project_id)
+    project_title = project.title if project else None
+
+    matched_user = None
+    if match.mentor_id and match.mentor_id != current_user.id:
+        matched_user = await db.get(User, match.mentor_id)
+    elif match.investor_id and match.investor_id != current_user.id:
+        matched_user = await db.get(User, match.investor_id)
+    elif match.mentor_id:
+        matched_user = await db.get(User, match.mentor_id)
+    elif match.investor_id:
+        matched_user = await db.get(User, match.investor_id)
+
+    return MatchResponse(
+        id=str(match.id),
+        project_id=str(match.project_id),
+        project_title=project_title,
+        mentor_id=str(match.mentor_id) if match.mentor_id else None,
+        investor_id=str(match.investor_id) if match.investor_id else None,
+        matched_user_name=matched_user.full_name if matched_user else None,
+        matched_user_avatar=matched_user.avatar_url if matched_user else None,
+        matched_user_role=matched_user.role if matched_user else None,
+        status=match.status.value if hasattr(match.status, 'value') else match.status,
+        notes=match.notes,
+        created_at=match.created_at,
+        updated_at=match.updated_at,
+    )

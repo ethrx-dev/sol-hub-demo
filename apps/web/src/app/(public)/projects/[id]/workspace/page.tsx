@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { ArrowLeft, DollarSign, Upload, FileText, Download } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -14,10 +14,14 @@ import { useAuth } from "@/src/lib/auth";
 import { useWorkspaceWs } from "@/src/hooks/use-workspace-ws";
 import { api } from "@/src/lib/api-client";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface WorkspaceData {
   project: { id: string; title: string } | null;
   members: Array<{ id: string; full_name: string; role: string; avatar_url: string | null }>;
+  target_amount: number | null;
+  raised_amount: number;
+  documents: Array<{ id: string; filename: string; file_url: string; file_type: string; file_size: number; created_at: string }>;
 }
 
 interface MilestoneItem {
@@ -130,14 +134,30 @@ export default function WorkspacePage({
               <CardContent className="space-y-3">
                 <div>
                   <span className="text-xs text-muted-foreground">Funding Goal</span>
-                  <p className="text-2xl font-bold">$50,000</p>
+                  <p className="text-2xl font-bold">
+                    ${(workspace?.target_amount || 0).toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground">Raised</span>
-                  <p className="text-2xl font-bold">$15,000 (30%)</p>
+                  <p className="text-2xl font-bold">
+                    ${(workspace?.raised_amount || 0).toLocaleString()}
+                    {workspace?.target_amount ? (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {" "}({Math.round(((workspace.raised_amount || 0) / workspace.target_amount) * 100)}%)
+                      </span>
+                    ) : null}
+                  </p>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div className="h-full w-[30%] rounded-full bg-primary" />
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{
+                      width: workspace?.target_amount
+                        ? `${Math.min(((workspace.raised_amount || 0) / workspace.target_amount) * 100, 100)}%`
+                        : "0%",
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -193,13 +213,44 @@ export default function WorkspacePage({
 
         <TabsContent value="documents" className="mt-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Documents</CardTitle>
+              <DocumentUploadButton projectId={id} />
             </CardHeader>
             <CardContent>
-              <div className="py-8 text-center text-muted-foreground">
-                No documents uploaded yet.
-              </div>
+              {workspace?.documents && workspace.documents.length > 0 ? (
+                <div className="space-y-2">
+                  {workspace.documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">{doc.filename}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(doc.file_size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-muted-foreground">
+                  No documents uploaded yet.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -227,20 +278,32 @@ export default function WorkspacePage({
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
                     <span className="text-sm text-muted-foreground">Total Invested</span>
-                    <p className="text-2xl font-bold">$15,000</p>
+                    <p className="text-2xl font-bold">
+                      ${(workspace?.raised_amount || 0).toLocaleString()}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Milestone Progress</span>
-                    <p className="text-2xl font-bold">25%</p>
+                    <p className="text-2xl font-bold">
+                      {milestones.length > 0
+                        ? `${Math.round((milestones.filter((m) => m.status === "completed").length / milestones.length) * 100)}%`
+                        : "0%"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Next Payout</span>
-                    <p className="text-2xl font-bold">$10,000</p>
+                    <p className="text-2xl font-bold">
+                      ${(workspace?.target_amount || 0) > 0
+                        ? ((workspace?.target_amount || 0) - (workspace?.raised_amount || 0)).toLocaleString()
+                        : "0"}
+                    </p>
                   </div>
                 </div>
-                <Button variant="outline">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  View Full Financial Report
+                <Button variant="outline" asChild>
+                  <Link href={`/investor/portfolio`}>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    View Full Financial Report
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -248,5 +311,51 @@ export default function WorkspacePage({
         )}
       </Tabs>
     </div>
+  );
+}
+
+function DocumentUploadButton({ projectId }: { projectId: string }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      await api.post(`/projects/${projectId}/workspace/documents`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Document uploaded");
+      window.location.reload();
+    } catch {
+      toast.error("Failed to upload document");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleUpload}
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+      />
+      <Button
+        size="sm"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        {uploading ? "Uploading..." : "Upload"}
+      </Button>
+    </>
   );
 }

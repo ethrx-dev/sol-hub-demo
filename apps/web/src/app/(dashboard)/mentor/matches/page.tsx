@@ -72,10 +72,11 @@ export default function MentorMatchesPage() {
                   <MatchCard
                     key={match.id}
                     id={match.id}
-                    projectTitle={match.project_id || "Unknown Project"}
+                    projectTitle={match.project_title || "Unknown Project"}
                     projectTagline=""
-                    matchedUserName={match.mentor_id || match.investor_id || "Unknown"}
-                    matchedUserRole={match.mentor_id ? "mentor" : "investor"}
+                    matchedUserName={match.matched_user_name || "Unknown"}
+                    matchedUserAvatar={match.matched_user_avatar}
+                    matchedUserRole={match.matched_user_role || ""}
                     status={match.status}
                     onAccept={() => handleAccept(match.id)}
                     onDecline={() => handleDecline(match.id)}
