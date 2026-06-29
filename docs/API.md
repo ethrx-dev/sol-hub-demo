@@ -50,10 +50,13 @@ This only works once — subsequent calls return `409 Conflict`. Requires `ADMIN
 | Members       | `/api/members`       | Member directory                       |
 | Resources     | `/api/resources`     | Resource library CRUD                  |
 | Notifications | `/api/notifications` | User notification management           |
+| Milestones    | `/api/projects/{id}/milestones` | Create, list project milestones       |
 | Membership    | `/api/membership`    | Plans, Stripe checkout, webhooks       |
-| Media         | `/api/media`         | File upload                            |
+| Media         | `/api/media`         | File upload (images, documents)         |
+| Users/Me      | `/api/users/me`      | Profile, avatar, video, notification-preferences |
 | Workspace     | `/api/projects/{id}/workspace` | Documents, messages          |
-| Admin         | `/api/admin`         | Seed, stats, users, projects, matches  |
+| Workspace WS  | `ws://.../api/ws/workspace/{id}?token=` | Real-time messaging     |
+| Admin         | `/api/admin`         | Seed, stats, users, projects, matches, groups, posts, resources |
 
 ---
 
@@ -171,6 +174,41 @@ curl -X PATCH http://localhost:8000/api/admin/users/{user_id}/role \
 
 Valid roles: `innovator`, `mentor`, `investor`, `admin`
 
+### Admin: List/Manage Groups (super admin)
+
+```bash
+curl -H "Authorization: Bearer <token>" "http://localhost:8000/api/admin/groups"
+curl -X DELETE "http://localhost:8000/api/admin/groups/{group_id}" -H "Authorization: Bearer <token>"
+```
+
+### Admin: List/Manage Posts (super admin)
+
+```bash
+curl -H "Authorization: Bearer <token>" "http://localhost:8000/api/admin/posts"
+curl -X DELETE "http://localhost:8000/api/admin/posts/{post_id}" -H "Authorization: Bearer <token>"
+```
+
+### Admin: List/Manage Resources (super admin)
+
+```bash
+curl -H "Authorization: Bearer <token>" "http://localhost:8000/api/admin/resources"
+curl -X DELETE "http://localhost:8000/api/admin/resources/{resource_id}" -H "Authorization: Bearer <token>"
+```
+
+### Admin: Toggle Super Admin
+
+```bash
+curl -X POST "http://localhost:8000/api/admin/users/{user_id}/toggle-super-admin" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Admin: Delete User (deactivate)
+
+```bash
+curl -X DELETE "http://localhost:8000/api/admin/users/{user_id}" \
+  -H "Authorization: Bearer <token>"
+```
+
 ### Admin: Change Project Status
 
 ```bash
@@ -181,6 +219,87 @@ curl -X PATCH http://localhost:8000/api/admin/projects/{project_id}/status \
 ```
 
 Valid statuses: `draft`, `submitted`, `active`, `funded`, `completed`, `cancelled`
+
+### Milestones
+
+```bash
+# List milestones for a project
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/projects/{project_id}/milestones"
+
+# Create a milestone
+curl -X POST http://localhost:8000/api/projects/{project_id}/milestones \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "MVP Launch",
+    "description": "Launch minimum viable product",
+    "due_date": "2026-09-01",
+    "budget": 15000
+  }'
+```
+
+### Notification Preferences
+
+```bash
+# Get preferences (auto-creates defaults if missing)
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/users/me/notification-preferences"
+
+# Update preferences
+curl -X PATCH http://localhost:8000/api/users/me/notification-preferences \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email_messages": false,
+    "in_app_messages": true,
+    "email_matches": true,
+    "in_app_matches": true
+  }'
+```
+
+Available toggle groups: `messages`, `matches`, `group_activity`, `project_updates` — each has an `email_*` and `in_app_*` variant.
+
+### Media Upload
+
+```bash
+curl -X POST http://localhost:8000/api/media/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@image.jpg"
+```
+
+Returns `{"url": "/uploads/uuid-filename.jpg", "filename": "uuid-filename.jpg", "content_type": "image/jpeg", "size": 12345}`.
+
+### Avatar & Video Upload
+
+```bash
+# Upload avatar
+curl -X POST http://localhost:8000/api/users/me/avatar \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@avatar.jpg"
+
+# Upload intro video
+curl -X POST http://localhost:8000/api/users/me/video \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@intro.mp4"
+```
+
+### Feed Posts
+
+```bash
+# Create a feed post
+curl -X POST http://localhost:8000/api/feed/posts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Excited to launch our prototype!",
+    "media_urls": ["/uploads/image1.jpg"]
+  }'
+
+# List feed posts (paginated)
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/feed/posts?skip=0&limit=20"
+```
 
 ---
 
@@ -221,9 +340,30 @@ Errors follow FastAPI convention:
 | 403 | Forbidden (wrong role) |
 | 404 | Not Found |
 | 409 | Conflict (duplicate email, match, etc.) |
-| 422 | Validation Error (request body) |
+| 429 | Rate Limited (retry after window) |
 
 ---
+
+## Rate Limiting
+
+Auth endpoints are rate-limited via slowapi:
+
+| Endpoint | Limit |
+|----------|-------|
+| POST /api/auth/register | 5 requests per minute |
+| POST /api/auth/login | 10 requests per minute |
+| POST /api/auth/forgot-password | 3 requests per hour |
+| POST /api/auth/reset-password | 5 requests per hour |
+
+## WebSocket
+
+Workspace messaging uses WebSocket at:
+
+```
+ws://localhost:8000/api/ws/workspace/{project_id}?token={jwt_token}
+```
+
+Messages are JSON with `type`, `sender_id`, `sender_name`, `content`, and `timestamp` fields.
 
 ## Schema Conventions
 
