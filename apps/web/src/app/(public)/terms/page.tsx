@@ -39,7 +39,7 @@ export default function TermsPage() {
 
         <h2 className="text-lg font-semibold text-foreground mt-8">5. Limitation of Liability</h2>
         <p>
-          SOL Hub is provided "as is" without warranties. We are not liable for
+          SOL Hub is provided &quot;as is&quot; without warranties. We are not liable for
           damages arising from your use of the platform, including lost
           opportunities or data.
         </p>
