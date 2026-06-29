@@ -28,9 +28,17 @@ async def upload_file(storage_key: str, data: bytes, content_type: str) -> str:
         Key=storage_key,
         Body=data,
         ContentType=content_type,
-        ACL="public-read",
     )
-    return f"{settings.S3_ENDPOINT}/{settings.S3_BUCKET}/{storage_key}"
+    return generate_presigned_url(storage_key)
+
+
+def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
+    client = get_s3_client()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.S3_BUCKET, "Key": storage_key},
+        ExpiresIn=expires_in,
+    )
 
 
 async def delete_file(storage_key: str) -> None:

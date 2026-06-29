@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ForumCategoryResponse(BaseModel):
@@ -64,12 +64,12 @@ class CreateForumCategoryRequest(BaseModel):
 
 
 class CreateForumThreadRequest(BaseModel):
-    title: str
-    content: str
+    title: str = Field(max_length=255)
+    content: str = Field(max_length=50000)
 
 
 class CreateForumReplyRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=50000)
 
 
 class UpdateForumThreadRequest(BaseModel):

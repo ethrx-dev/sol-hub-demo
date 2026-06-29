@@ -218,6 +218,7 @@ async def delete_document(
 async def track_download(
     doc_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(select(DocLibraryItem).where(DocLibraryItem.id == doc_id))
     doc = result.scalar_one_or_none()
