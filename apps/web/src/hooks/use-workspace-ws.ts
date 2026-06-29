@@ -48,9 +48,9 @@ export function useWorkspaceWs(projectId: string | undefined) {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.hostname;
     const port = "8000";
-    const url = `${protocol}//${host}:${port}/api/ws/workspace/${projectId}?token=${token}`;
+    const url = `${protocol}//${host}:${port}/api/ws/workspace/${projectId}`;
 
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(url, [token]);
     wsRef.current = ws;
 
     ws.onopen = () => setConnected(true);

@@ -150,6 +150,14 @@ export default function LandingPage() {
                 className="mx-auto max-w-5xl"
               />
             </div>
+            <div className="mt-10 text-center">
+              <a
+                href="/testimonials"
+                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Share your story →
+              </a>
+            </div>
           </div>
         </section>
       )}

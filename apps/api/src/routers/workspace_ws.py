@@ -1,6 +1,7 @@
+import json
 import uuid
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import select
 
 from src.database import async_session
@@ -17,7 +18,9 @@ router = APIRouter()
 
 
 @router.websocket("/api/ws/workspace/{project_id}")
-async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query(...)):
+async def workspace_ws(websocket: WebSocket, project_id: str):
+    subprotocols = websocket.headers.get("sec-websocket-protocol", "")
+    token = subprotocols.split(",")[0].strip() if subprotocols else None
     user_id = None
     try:
         payload = decode_token(token)
@@ -69,7 +72,6 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
 
         while True:
             raw = await websocket.receive_text()
-            import json
             msg = json.loads(raw)
 
             if msg.get("event") == "ping":

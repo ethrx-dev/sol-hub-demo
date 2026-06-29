@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MessageSquare, Users, Image, Video, Plus, UserPlus } from "lucide-react";
+import { MessageSquare, Users, Image, Video, Plus, UserPlus, Newspaper, Calendar, Search, BookOpen, Flag } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -11,6 +11,7 @@ import { ActivityFeed } from "@/src/components/shared/activity-feed";
 import { PostModal } from "@/src/components/shared/post-modal";
 import { api } from "@/src/lib/api-client";
 import { useAuth } from "@/src/lib/auth";
+import { isFeatureEnabled } from "@/src/lib/features";
 
 export default function HubPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -33,6 +34,7 @@ export default function HubPage() {
           id: p.id,
           authorName: p.author_name,
           authorAvatar: p.author_avatar,
+          authorId: p.author_id,
           content: p.content,
           media: p.media_urls,
           likes: p.like_count,
@@ -156,12 +158,14 @@ export default function HubPage() {
             <Video className="mr-2 h-4 w-4" />
             Videos
           </TabsTrigger>
-          <Link href="/hub/connections">
-            <TabsTrigger value="connections" className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Network
-            </TabsTrigger>
-          </Link>
+          {isFeatureEnabled("connections") && (
+            <Link href="/hub/connections">
+              <TabsTrigger value="connections" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Network
+              </TabsTrigger>
+            </Link>
+          )}
         </TabsList>
 
         <TabsContent value="feed" className="mt-6">

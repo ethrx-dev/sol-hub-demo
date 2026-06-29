@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, UserCheck, ArrowLeft } from "lucide-react";
+import { FeatureGuard } from "@/src/components/shared/feature-guard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -16,6 +17,42 @@ export default function ConnectionsPage() {
   const [followers, setFollowers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState({ following: 0, followers: 0 });
+
+  return (
+    <FeatureGuard featureName="connections" fallback="/hub">
+      <ConnectionsInner
+        following={following}
+        followers={followers}
+        loading={loading}
+        counts={counts}
+        setFollowing={setFollowing}
+        setFollowers={setFollowers}
+        setLoading={setLoading}
+        setCounts={setCounts}
+      />
+    </FeatureGuard>
+  );
+}
+
+function ConnectionsInner({
+  following,
+  followers,
+  loading,
+  counts,
+  setFollowing,
+  setFollowers,
+  setLoading,
+  setCounts,
+}: {
+  following: any[];
+  followers: any[];
+  loading: boolean;
+  counts: { following: number; followers: number };
+  setFollowing: (v: any[]) => void;
+  setFollowers: (v: any[]) => void;
+  setLoading: (v: boolean) => void;
+  setCounts: (v: { following: number; followers: number }) => void;
+}) {
 
   useEffect(() => {
     Promise.all([
