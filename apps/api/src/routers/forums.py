@@ -154,6 +154,8 @@ async def create_thread(
     db.add(thread)
     await db.flush()
     await db.refresh(thread)
+    from src.routers.activity import record_activity
+    await record_activity(db, current_user.id, "forum_thread_created", f"Created forum thread '{thread.title}'", target_type="forum_thread", target_id=str(thread.id))
     return ForumThreadResponse(
         id=thread.id, category_id=thread.category_id, author_id=thread.author_id,
         author_name=current_user.full_name or current_user.email,

@@ -129,6 +129,8 @@ async def create_document(
     db.add(doc)
     await db.flush()
     await db.refresh(doc)
+    from src.routers.activity import record_activity
+    await record_activity(db, current_user.id, "document_uploaded", f"Uploaded document '{doc.title}'", target_type="document", target_id=str(doc.id))
     return DocLibraryItemResponse(
         id=doc.id, title=doc.title, description=doc.description,
         file_url=doc.file_url, file_type=doc.file_type, file_size=doc.file_size,
