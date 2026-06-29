@@ -27,7 +27,6 @@ from src.schemas.admin import (
     DashboardStatsResponse,
 )
 from src.schemas.auth import TokenResponse
-from src.schemas.match import MatchResponse
 from src.schemas.project import ProjectResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 from src.utils.security import hash_password, create_access_token, create_refresh_token
@@ -271,7 +270,32 @@ async def admin_create_match(body: AdminMatchCreateRequest, db: DbSession, curre
     )
     db.add(match)
     await db.flush()
-    return match
+
+    matched_user = None
+    if mentor_id and mentor_id != current_admin.id:
+        matched_user = await db.get(User, mentor_id)
+    elif investor_id and investor_id != current_admin.id:
+        matched_user = await db.get(User, investor_id)
+    elif mentor_id:
+        matched_user = await db.get(User, mentor_id)
+    elif investor_id:
+        matched_user = await db.get(User, investor_id)
+
+    from src.schemas.match import MatchResponse
+    return MatchResponse(
+        id=str(match.id),
+        project_id=str(match.project_id),
+        project_title=project.title,
+        mentor_id=str(match.mentor_id) if match.mentor_id else None,
+        investor_id=str(match.investor_id) if match.investor_id else None,
+        matched_user_name=matched_user.full_name if matched_user else None,
+        matched_user_avatar=matched_user.avatar_url if matched_user else None,
+        matched_user_role=matched_user.role if matched_user else None,
+        status=match.status.value if hasattr(match.status, 'value') else match.status,
+        notes=match.notes,
+        created_at=match.created_at,
+        updated_at=match.updated_at,
+    )
 
 
 @router.get("/matches", response_model=PaginatedResponse[MatchResponse])
@@ -281,11 +305,35 @@ async def list_all_matches(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
+    from src.schemas.match import MatchResponse
     total = await db.scalar(select(func.count(Match.id)))
     result = await db.execute(
         select(Match).order_by(Match.created_at.desc()).offset(skip).limit(limit)
     )
-    items = result.scalars().all()
+    matches = result.scalars().all()
+    items = []
+    for match in matches:
+        project = await db.get(Project, match.project_id)
+        project_title = project.title if project else None
+        matched_user = None
+        if match.mentor_id:
+            matched_user = await db.get(User, match.mentor_id)
+        elif match.investor_id:
+            matched_user = await db.get(User, match.investor_id)
+        items.append(MatchResponse(
+            id=str(match.id),
+            project_id=str(match.project_id),
+            project_title=project_title,
+            mentor_id=str(match.mentor_id) if match.mentor_id else None,
+            investor_id=str(match.investor_id) if match.investor_id else None,
+            matched_user_name=matched_user.full_name if matched_user else None,
+            matched_user_avatar=matched_user.avatar_url if matched_user else None,
+            matched_user_role=matched_user.role if matched_user else None,
+            status=match.status.value if hasattr(match.status, 'value') else match.status,
+            notes=match.notes,
+            created_at=match.created_at,
+            updated_at=match.updated_at,
+        ))
     return PaginatedResponse(items=items, total=total or 0, skip=skip, limit=limit)
 
 

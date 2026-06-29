@@ -38,3 +38,5 @@ class WorkspaceResponse(BaseModel):
     documents: list[DocumentResponse] = []
     messages: list[MessageResponse] = []
     members: list[dict] = []
+    target_amount: float | None = None
+    raised_amount: float = 0.0

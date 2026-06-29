@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { ResourceCard } from "@/src/components/shared/resource-card";
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { Card, CardContent } from "@/src/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -10,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
+import { api } from "@/src/lib/api-client";
 
-const resources = [
+const fallbackResources = [
   {
     id: "1",
     title: "How to Write a Winning Pitch Deck",
@@ -71,14 +74,30 @@ const resources = [
 const SECTORS = ["CleanTech", "HealthTech", "FinTech", "EdTech", "AI/ML", "SaaS", "General"];
 const TYPES = ["article", "video", "guide", "template"];
 
+const typeLabels: Record<string, string> = {
+  article: "Article",
+  guide: "Guide",
+  video: "Video",
+  template: "Template",
+};
+
 export default function ResourcesPage() {
+  const [resources, setResources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sector, setSector] = useState("all");
   const [type, setType] = useState("all");
 
+  useEffect(() => {
+    api.get("/resources/?limit=50")
+      .then((data: any) => setResources(data.items || []))
+      .catch(() => setResources(fallbackResources))
+      .finally(() => setLoading(false));
+  }, []);
+
   const filtered = resources.filter((r) => {
-    if (sector !== "all" && !r.sectors.includes(sector)) return false;
-    if (type !== "all" && r.type !== type) return false;
+    if (sector !== "all" && r.sector && r.sector !== sector && !(r.sectors || []).includes(sector)) return false;
+    if (type !== "all" && r.resource_type !== type && r.type !== type) return false;
     if (search) {
       const q = search.toLowerCase();
       if (
@@ -135,14 +154,35 @@ export default function ResourcesPage() {
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="mt-2 h-4 w-full" />
+                <Skeleton className="mt-3 h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           No resources found.
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((resource) => (
-            <ResourceCard key={resource.id} {...resource} />
+            <ResourceCard
+              key={resource.id}
+              id={resource.id}
+              title={resource.title}
+              description={resource.description || ""}
+              type={resource.resource_type || resource.type || "article"}
+              sectors={resource.sector ? [resource.sector] : resource.sectors || []}
+              authorName={resource.author_name || "SOL Hub"}
+              readTime={resource.read_time || resource.readTime || ""}
+            />
           ))}
         </div>
       )}
