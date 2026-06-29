@@ -11,6 +11,7 @@ from src.middleware.rate_limit import limiter
 from src.models.user import User
 from src.models.refresh_token import RefreshToken
 from src.models.password_reset_token import PasswordResetToken
+from src.models.verification_token import VerificationToken
 from src.schemas.auth import (
     RegisterRequest,
     LoginRequest,
@@ -19,10 +20,12 @@ from src.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
     UserResponse,
 )
 from src.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from src.utils.email import send_password_reset_email, send_welcome_email
+from src.utils.email import send_password_reset_email, send_welcome_email, send_verification_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -53,7 +56,15 @@ async def register(request: Request, body: RegisterRequest, db: DbSession):
         expires_at=expires_at,
     ))
 
-    await send_welcome_email(user.email, user.full_name)
+    verification_token_str = secrets.token_urlsafe(32)
+    verification_token_hash = hashlib.sha256(verification_token_str.encode()).hexdigest()
+    db.add(VerificationToken(
+        user_id=user.id,
+        token_hash=verification_token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    ))
+
+    await send_welcome_email(user.email, user.full_name, verification_token_str)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token_str)
 
@@ -185,6 +196,54 @@ async def reset_password(request: Request, body: ResetPasswordRequest, db: DbSes
 
     user.password_hash = hash_password(body.new_password)
     return {"detail": "Password has been reset successfully"}
+
+
+@router.post("/verify-email", status_code=status.HTTP_200_OK)
+async def verify_email(body: VerifyEmailRequest, db: DbSession):
+    token_hash = hashlib.sha256(body.token.encode()).hexdigest()
+    result = await db.execute(
+        select(VerificationToken).where(
+            VerificationToken.token_hash == token_hash,
+            VerificationToken.is_used == False,
+            VerificationToken.expires_at > datetime.now(timezone.utc),
+        )
+    )
+    stored = result.scalar_one_or_none()
+    if not stored:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
+
+    stored.is_used = True
+    user_result = await db.execute(select(User).where(User.id == stored.user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.is_email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+    return {"detail": "Email verified successfully"}
+
+
+@router.post("/resend-verification", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("3/hour")
+async def resend_verification(request: Request, body: ResendVerificationRequest, db: DbSession):
+    result = await db.execute(select(User).where(User.email == body.email))
+    user = result.scalar_one_or_none()
+    if not user:
+        return {"detail": "If the email exists, a verification link has been sent"}
+
+    if user.is_email_verified:
+        return {"detail": "Email is already verified"}
+
+    token_str = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token_str.encode()).hexdigest()
+    db.add(VerificationToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    ))
+
+    await send_verification_email(user.email, token_str)
+    return {"detail": "If the email exists, a verification link has been sent"}
 
 
 @router.get("/me", response_model=UserResponse)

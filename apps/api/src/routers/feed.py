@@ -19,20 +19,39 @@ from src.schemas.common import MessageResponse, PaginatedResponse
 router = APIRouter(prefix="/api/feed", tags=["feed"])
 
 
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"}
+VIDEO_EXTS = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".wmv"}
+
+
+def _media_type_from_urls(urls: list[str]) -> str | None:
+    for url in urls:
+        ext = url.rsplit(".", 1)[-1].lower() if "." in url else ""
+        if f".{ext}" in IMAGE_EXTS:
+            return "photo"
+        if f".{ext}" in VIDEO_EXTS:
+            return "video"
+    return None
+
+
 @router.get("/", response_model=PaginatedResponse[PostResponse])
 async def get_feed(
     db: DbSession,
     current_user: CurrentUser,
+    media_type: str | None = Query(None, regex="^(photo|video)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
+    base_where = [Post.is_deleted == False]
+    if media_type:
+        base_where.append(Post.media_urls != [])
+
     total = await db.scalar(
-        select(func.count(Post.id)).where(Post.is_deleted == False)
+        select(func.count(Post.id)).where(*base_where)
     )
     result = await db.execute(
         select(Post, User.full_name, User.avatar_url)
         .join(User, Post.author_id == User.id)
-        .where(Post.is_deleted == False)
+        .where(*base_where)
         .order_by(Post.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -41,6 +60,9 @@ async def get_feed(
 
     items = []
     for post, author_name, author_avatar in rows:
+        urls = post.media_urls or []
+        if media_type and _media_type_from_urls(urls) != media_type:
+            continue
         like_count = await db.scalar(
             select(func.count(Like.id)).where(Like.post_id == post.id)
         )
@@ -58,7 +80,7 @@ async def get_feed(
             author_name=author_name,
             author_avatar=author_avatar,
             content=post.content,
-            media_urls=post.media_urls or [],
+            media_urls=urls,
             like_count=like_count or 0,
             comment_count=comment_count or 0,
             is_liked=is_liked,

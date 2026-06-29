@@ -6,8 +6,10 @@ from sqlalchemy import select, func, or_
 from src.deps import DbSession, CurrentUser
 from src.models.group import Group
 from src.models.group_member import GroupMember
+from src.models.group_message import GroupMessage
 from src.models.user import User
 from src.schemas.group import GroupCreateRequest, GroupUpdateRequest, GroupResponse, GroupMemberResponse
+from src.schemas.group_message import GroupMessageCreateRequest, GroupMessageResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
@@ -227,3 +229,109 @@ async def leave_group(group_id: uuid.UUID, db: DbSession, current_user: CurrentU
 
     await db.delete(membership)
     return {"detail": "Left group successfully"}
+
+
+@router.get("/{group_id}/messages", response_model=PaginatedResponse[GroupMessageResponse])
+async def list_group_messages(
+    group_id: uuid.UUID,
+    db: DbSession,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+):
+    group = await db.get(Group, group_id)
+    if not group or group.is_deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+    membership = await db.scalar(
+        select(GroupMember).where(
+            GroupMember.group_id == group_id, GroupMember.user_id == current_user.id
+        )
+    )
+    if not membership:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a member of this group")
+
+    total = await db.scalar(
+        select(func.count(GroupMessage.id)).where(GroupMessage.group_id == group_id)
+    )
+    result = await db.execute(
+        select(GroupMessage, User.full_name, User.avatar_url)
+        .join(User, GroupMessage.sender_id == User.id)
+        .where(GroupMessage.group_id == group_id)
+        .order_by(GroupMessage.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    items = []
+    for msg, full_name, avatar_url in result.all():
+        items.append(GroupMessageResponse(
+            id=str(msg.id),
+            group_id=str(msg.group_id),
+            sender_id=str(msg.sender_id),
+            sender_name=full_name,
+            sender_avatar=avatar_url,
+            content=msg.content,
+            created_at=msg.created_at,
+        ))
+
+    return PaginatedResponse(items=items, total=total or 0, skip=skip, limit=limit)
+
+
+@router.post("/{group_id}/messages", response_model=GroupMessageResponse, status_code=status.HTTP_201_CREATED)
+async def send_group_message(
+    group_id: uuid.UUID,
+    body: GroupMessageCreateRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    group = await db.get(Group, group_id)
+    if not group or group.is_deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+    membership = await db.scalar(
+        select(GroupMember).where(
+            GroupMember.group_id == group_id, GroupMember.user_id == current_user.id
+        )
+    )
+    if not membership:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a member of this group")
+
+    msg = GroupMessage(
+        group_id=group_id,
+        sender_id=current_user.id,
+        content=body.content,
+    )
+    db.add(msg)
+    await db.flush()
+    await db.refresh(msg)
+
+    return GroupMessageResponse(
+        id=str(msg.id),
+        group_id=str(msg.group_id),
+        sender_id=str(msg.sender_id),
+        sender_name=current_user.full_name,
+        sender_avatar=current_user.avatar_url,
+        content=msg.content,
+        created_at=msg.created_at,
+    )
+
+
+@router.delete("/{group_id}/messages/{message_id}", response_model=MessageResponse)
+async def delete_group_message(
+    group_id: uuid.UUID,
+    message_id: uuid.UUID,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    group = await db.get(Group, group_id)
+    if not group or group.is_deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+    msg = await db.get(GroupMessage, message_id)
+    if not msg or msg.group_id != group_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+    if msg.sender_id != current_user.id and current_user.role != "admin" and group.creator_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own messages")
+
+    await db.delete(msg)
+    return {"detail": "Message deleted successfully"}

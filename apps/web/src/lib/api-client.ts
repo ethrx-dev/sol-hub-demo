@@ -54,7 +54,7 @@ async function request<T>(
     };
     try {
       const data = await res.json();
-      error.message = data.message || error.message;
+      error.message = data.message || data.detail || error.message;
       error.errors = data.errors;
     } catch {
       error.message = res.statusText || error.message;

@@ -6,24 +6,13 @@ export const metadata = {
     "Hear what our community of innovators, mentors, and investors say about SOL Hub.",
 };
 
+
+
 export default function TestimonialsPage() {
   const widgetId = process.env.NEXT_PUBLIC_SHAPO_WIDGET_ID;
 
-  if (!widgetId) {
-    return (
-      <section className="mx-auto max-w-7xl px-4 py-24 text-center sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold font-heading">Testimonials</h1>
-        <p className="mt-4 text-muted-foreground">
-          Testimonials are not yet configured. Set <code>NEXT_PUBLIC_SHAPO_WIDGET_ID</code> in your
-          environment variables.
-        </p>
-      </section>
-    );
-  }
-
   return (
     <>
-      {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-sage-light/30 via-background to-sage-light/20 py-24">
         <div className="absolute -top-10 -right-10 opacity-[0.07] pointer-events-none">
           <img src="/sol-icon.svg" alt="" className="w-[200px] sm:w-[300px]" />
@@ -41,17 +30,25 @@ export default function TestimonialsPage() {
         </div>
       </section>
 
-      {/* Widget */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <ShapoWidget
-            widgetId={widgetId}
-            className="mx-auto"
-          />
-        </div>
-      </section>
+      {widgetId ? (
+        <section className="py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <ShapoWidget widgetId={widgetId} className="mx-auto" />
+          </div>
+        </section>
+      ) : (
+        <section className="py-20">
+          <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+            <div className="rounded-lg border bg-card p-12">
+              <h2 className="text-2xl font-semibold">Testimonials Coming Soon</h2>
+              <p className="mt-3 text-muted-foreground">
+                We&apos;re collecting stories from our community. Check back soon to hear from innovators, mentors, and investors building the future on SOL Hub.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
-      {/* CTA */}
       <section className="relative bg-sage-light/30 py-20 overflow-hidden">
         <div className="absolute -left-10 top-0 opacity-[0.05] pointer-events-none">
           <img src="/sol-icon.svg" alt="" className="w-[180px] sm:w-[250px]" />

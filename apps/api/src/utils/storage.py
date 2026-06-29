@@ -28,6 +28,7 @@ async def upload_file(storage_key: str, data: bytes, content_type: str) -> str:
         Key=storage_key,
         Body=data,
         ContentType=content_type,
+        ACL="public-read",
     )
     return f"{settings.S3_ENDPOINT}/{settings.S3_BUCKET}/{storage_key}"
 

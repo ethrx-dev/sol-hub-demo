@@ -21,8 +21,7 @@ export default function PublicLayout({
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
-                <img src="/sol-logo.svg" alt="SOL Hub" className="h-8 w-auto" />
-                <span className="text-lg font-bold font-heading">Hub</span>
+                <img src="/sol-logo.svg" alt="SOL" className="h-8 w-auto" />
               </div>
               <p className="mt-3 text-sm text-white/70">
                 Nurturing dreams into successful businesses through community-powered incubation.

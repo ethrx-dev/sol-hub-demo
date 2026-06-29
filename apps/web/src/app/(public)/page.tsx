@@ -56,16 +56,6 @@ export default function LandingPage() {
         <div className="absolute -top-10 -right-10 opacity-[0.07] pointer-events-none">
           <img src="/sol-icon.svg" alt="" className="w-[200px] sm:w-[300px] lg:w-[400px]" />
         </div>
-        <div className="absolute -bottom-20 -left-20 opacity-[0.05] pointer-events-none rotate-45">
-          <img src="/sol-icon.svg" alt="" className="w-[250px] sm:w-[350px]" />
-        </div>
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none scale-[2]">
-          <img src="/sol-icon.svg" alt="" className="w-[300px]" />
-        </div>
-        {/* Gardenie shape */}
-        <div className="absolute bottom-0 right-0 opacity-[0.04] pointer-events-none">
-          <img src="/sol-shape-gardenie.png" alt="" className="w-[300px] sm:w-[500px]" />
-        </div>
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-8 flex justify-center">
@@ -115,9 +105,6 @@ export default function LandingPage() {
 
       {/* How It Works */}
       <section className="relative overflow-hidden py-20 bg-white">
-        <div className="absolute -right-16 top-1/2 -translate-y-1/2 opacity-[0.06] pointer-events-none rotate-90">
-          <img src="/sol-shape-gardenie.png" alt="" className="w-[200px] sm:w-[300px]" />
-        </div>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-4xl font-bold font-heading">How It Works</h2>

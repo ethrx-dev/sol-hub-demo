@@ -29,10 +29,6 @@ async def update_profile(body: UpdateProfileRequest, db: DbSession, current_user
         current_user.full_name = body.full_name
     if body.bio is not None:
         current_user.bio = body.bio
-    if body.role is not None:
-        if body.role not in ("innovator", "mentor", "investor", "admin"):
-            raise HTTPException(status_code=400, detail=f"Invalid role: {body.role}")
-        current_user.role = body.role
     if body.skills is not None:
         current_user.skills = body.skills
     if body.sectors_of_interest is not None:
