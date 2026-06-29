@@ -6,7 +6,6 @@ from .common import BaseResponseWithUUID
 class MemberResponse(BaseResponseWithUUID):
     id: str
     full_name: str
-    email: str
     avatar_url: str | None = None
     role: str
     bio: str | None = None

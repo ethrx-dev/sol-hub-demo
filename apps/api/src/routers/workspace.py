@@ -19,7 +19,7 @@ from src.schemas.workspace import (
 )
 from src.schemas.common import MessageResponse as CommonMessageResponse
 from src.schemas.common import PaginatedResponse
-from src.utils.file_validator import validate_file, generate_storage_key
+from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
 from src.utils.storage import upload_file
 
 router = APIRouter(prefix="/api/projects/{project_id}/workspace", tags=["workspace"])
@@ -104,6 +104,7 @@ async def upload_document(
 ):
     await _verify_workspace_access(db, project_id, current_user.id)
     mime = validate_file(file)
+    validate_file_size(file)
     storage_key = generate_storage_key(file, mime)
     data = await file.read()
     url = await upload_file(storage_key, data, mime)

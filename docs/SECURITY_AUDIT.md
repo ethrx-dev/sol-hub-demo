@@ -10,13 +10,13 @@
 
 The codebase demonstrates strong security fundamentals in several areas: bcrypt password hashing, magic-byte file validation, UUID-renamed uploads, parameterized SQLAlchemy queries, explicit CORS origins, comprehensive security headers, rate limiting on auth endpoints, and a global exception handler that prevents stack trace leakage.
 
-All **3 critical vulnerabilities** have been remediated. An additional 5 high-severity and 8 medium/low issues remain documented below for future remediation.
+All **3 critical vulnerabilities** have been remediated. Of the 5 high-severity issues, all 5 have been fixed. Of the 6 medium-severity issues, 3 have been fixed (M2, M3, M6).
 
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 3 | 3 | 0 |
-| HIGH | 5 | 0 | 5 |
-| MEDIUM | 6 | 0 | 6 |
+| HIGH | 5 | 5 | 0 |
+| MEDIUM | 6 | 3 | 3 |
 | LOW | 4 | 0 | 4 |
 
 ---
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
     yield
 ```
 
-- **Action still required:** Generate a cryptographically random key for production (e.g., `python -c "import secrets; print(secrets.token_urlsafe(64))"`) and set it in the production environment variables.
+- **Action still required:** ~Generate a cryptographically random key for production~ Key has been generated and set in `.env`. Verify the production environment uses a different strong key.
 
 ---
 
@@ -134,34 +134,40 @@ await websocket.accept()
 
 ## HIGH Findings
 
-### H1. Email Exposure in Member Directory
+### H1. Email Exposure in Member Directory — RESOLVED
 
 **File:** `apps/api/src/schemas/member.py:9`
+**Status:** FIXED June 29, 2026
 
-`MemberResponse` includes the `email` field, which is returned by `GET /api/members/` to any authenticated user:
+`MemberResponse` previously included the `email` field, which was returned by `GET /api/members/` to any authenticated user:
 
 ```python
+# REMOVED — was exposed
 class MemberResponse(BaseResponseWithUUID):
     id: str
     full_name: str
-    email: str  # <-- exposed to all authenticated users
+    email: str  # <-- removed
     ...
 ```
 
-**Impact:** Any authenticated user can harvest all member email addresses, enabling phishing or spam.
+**Impact:** Any authenticated user could harvest all member email addresses, enabling phishing or spam.
 
-**Remediation:** Remove `email` from `MemberResponse`. If email contact is needed, implement a contact form or messaging system instead.
+**Remediation applied:**
+- Removed `email` field from `MemberResponse` schema in `apps/api/src/schemas/member.py`
+- The field was already unused by the frontend; this is a purely server-side change
 
 ---
 
-### H2. IDOR on Match Detail Endpoint
+### H2. IDOR on Match Detail Endpoint — RESOLVED
 
 **File:** `apps/api/src/routers/matches.py:201-234`
 **CWE:** CWE-639 (Authorization Bypass Through User-Controlled Key)
+**Status:** FIXED June 29, 2026
 
-`GET /api/matches/{match_id}` does not verify the requesting user is a participant in the match. Any authenticated user can view any match by ID, including notes and participant information.
+`GET /api/matches/{match_id}` previously did not verify the requesting user is a participant in the match. Any authenticated user could view any match by ID, including notes and participant information.
 
 ```python
+# REMOVED — was vulnerable
 @router.get("/{match_id}", response_model=MatchResponse)
 async def get_match(match_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     result = await db.execute(select(Match).where(Match.id == match_id))
@@ -170,51 +176,69 @@ async def get_match(match_id: uuid.UUID, db: DbSession, current_user: CurrentUse
     return MatchResponse(...)
 ```
 
-**Remediation:** Add a check that `current_user.id` is either `match.mentor_id`, `match.investor_id`, or the innovator of the matched project. Return 403 otherwise.
+**Remediation applied:**
+- Added authorization check after fetching the match: verifies `current_user.id` is either `match.mentor_id`, `match.investor_id`, or the project innovator
+- Admins bypass the check (same pattern as `update_match`)
+- Unauthorized users receive 403 Forbidden
 
 ---
 
-### H3. No File Size Limit on Uploads
+### H3. No File Size Limit on Uploads — RESOLVED
 
 **Files:** `apps/api/src/routers/media.py`, `apps/api/src/routers/users.py`, `apps/api/src/routers/projects.py`, `apps/api/src/routers/workspace.py`
+**Status:** FIXED June 29, 2026
 
-All upload endpoints call `await file.read()` to read the entire file into memory without any size limit. The `file_validator.py` validates file type via magic bytes but does not check file size.
+All upload endpoints called `await file.read()` to read the entire file into memory without any size limit.
 
-**Impact:** An attacker can upload arbitrarily large files, causing memory exhaustion (OOM) or filling S3/MinIO storage.
+**Impact:** An attacker could upload arbitrarily large files, causing memory exhaustion (OOM) or filling S3/MinIO storage.
 
-**Remediation:** Add a `MAX_FILE_SIZE` constant (e.g., 50 MB) and check `file.size` or the `Content-Length` header before reading. Use streaming uploads for large files.
+**Remediation applied:**
+- Added `MAX_FILE_SIZE = 50 * 1024 * 1024` (50 MB) constant in `apps/api/src/utils/file_validator.py`
+- Added `validate_file_size()` function that checks `UploadFile.size` and raises `413 REQUEST_ENTITY_TOO_LARGE` if exceeded
+- Called `validate_file_size()` in all 5 upload endpoints: media upload, avatar upload, intro video upload, project attachment upload, workspace document upload
 
 ---
 
-### H4. Stripe Demo Mode Active Without Safeguard
+### H4. Stripe Demo Mode Active Without Safeguard — RESOLVED
 
 **File:** `apps/api/src/routers/membership.py:46-53`
+**Status:** FIXED June 29, 2026
 
 When `STRIPE_SECRET_KEY` is empty, the checkout endpoint directly upgrades the user's membership tier without payment:
 
 ```python
+# FIXED — now guarded with ENVIRONMENT check
 if not settings.STRIPE_SECRET_KEY:
-    _apply_tier(current_user, tier, db)
-    await db.flush()
-    return CheckoutResponse(url=body.success_url)
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=501, detail="Stripe is not configured")
+    await _apply_tier(current_user, tier, db)
 ```
 
-Additionally, `_apply_tier` creates a new `Subscription` record each time without deactivating existing ones, leading to duplicate subscriptions.
+Additionally, `_apply_tier` previously created a new `Subscription` record each time, which would fail on the `user_id` unique constraint for repeat calls.
 
-**Impact:** In production, if Stripe keys are accidentally omitted, any user can upgrade to any paid tier for free.
+**Impact:** In production, if Stripe keys are accidentally omitted, any user could upgrade to any paid tier for free.
 
-**Remediation:** Guard demo mode with `settings.ENVIRONMENT == "development"`. In production, return 501 if Stripe is not configured. Also, deactivate existing subscriptions before creating new ones in `_apply_tier`.
+**Remediation applied:**
+- Guarded demo mode with `settings.ENVIRONMENT == "development"` check — in production, returns 501 Not Implemented
+- Fixed `_apply_tier` to upsert: checks for existing subscription and updates it instead of always creating a new one
+- Made `_apply_tier` async (was sync but used async session)
 
 ---
 
-### H5. Stripe Webhook Lacks Idempotency
+### H5. Stripe Webhook Lacks Idempotency — RESOLVED
 
 **File:** `apps/api/src/routers/membership.py:117-220`
 **CWE:** CWE-367 (Time-of-Check Time-of-Use)
+**Status:** FIXED June 29, 2026
 
-The Stripe webhook handler does not track processed event IDs. If Stripe retries a webhook (which it does automatically), the same event could be processed multiple times, potentially creating duplicate records or performing duplicate state transitions.
+The Stripe webhook handler previously did not track processed event IDs. If Stripe retried a webhook (which it does automatically), the same event could be processed multiple times, potentially creating duplicate records or performing duplicate state transitions.
 
-**Remediation:** Store processed event IDs in a database table. Before processing, check if the event ID has already been seen and skip if so.
+**Remediation applied:**
+- Created `WebhookEvent` model (`apps/api/src/models/webhook_event.py`) with `event_id` (unique, indexed), `event_type`, `source`, `payload`, and `created_at`
+- Ran Alembic migration `e2f7b0d9c4a6` to create the `webhook_events` table
+- Webhook handler now checks for existing `event_id` before processing and returns early if duplicate
+- After successful processing, the event ID is recorded in `webhook_events`
+- Also moved inline `import datetime` to top-level imports and consolidated `json` import
 
 ---
 
@@ -234,28 +258,30 @@ The JWT token is passed as `?token=...` in the WebSocket URL. URLs are logged by
 
 ---
 
-### M2. No Password Complexity Requirements
+### M2. No Password Complexity Requirements — RESOLVED
 
 **Files:** `apps/api/src/schemas/auth.py:8,31,37`
+**Status:** FIXED June 29, 2026
 
-Password fields accept any string with no minimum length, complexity, or common-password checks:
+Password fields previously accepted any string with no minimum length:
 
 ```python
 class RegisterRequest(BaseModel):
-    password: str  # no constraints
+    password: str = Field(min_length=8)  # added
 ```
 
-**Remediation:** Add `min_length=8` as a Pydantic field constraint. Optionally check against a common-passwords list.
+**Remediation applied:** Added `min_length=8` to `password` fields in `RegisterRequest`, `ChangePasswordRequest.new_password`, and `ResetPasswordRequest.new_password`. The `LoginRequest` password field intentionally has no constraint (users with old short passwords must still be able to log in).
 
 ---
 
-### M3. CORS_ORIGINS Not Overridable from Environment
+### M3. CORS_ORIGINS Not Overridable from Environment — RESOLVED
 
 **File:** `apps/api/src/config.py:27-29`
+**Status:** FIXED June 29, 2026
 
-`CORS_ORIGINS` is defined as a `@property` that hardcodes `["http://localhost:3000"]`. Despite `.env.example` listing `CORS_ORIGINS=[...]`, the property shadows any env var, making it impossible to configure production origins without code changes.
+`CORS_ORIGINS` was defined as a `@property` that hardcoded `["http://localhost:3000"]`. Despite `.env` listing `CORS_ORIGINS=[...]`, the property shadowed any env var, making it impossible to configure production origins without code changes.
 
-**Remediation:** Change `CORS_ORIGINS` from a `@property` to a regular field with a JSON-parsing validator, or use `pydantic-settings` built-in list parsing.
+**Remediation applied:** Changed `CORS_ORIGINS` from a `@property` to a regular `List[str]` field with default `["http://localhost:3000"]`. pydantic-settings V2 automatically parses JSON-encoded list values from the environment, so `CORS_ORIGINS=["https://solhub.app"]` in `.env` now works correctly.
 
 ---
 
@@ -277,17 +303,16 @@ No endpoint checks `current_user.membership_tier` before allowing actions. Free-
 
 ---
 
-### M6. Duplicate File Upload Utilities
+### M6. Duplicate File Upload Utilities — RESOLVED
 
 **Files:** `apps/api/src/utils/file.py` and `apps/api/src/utils/storage.py`
+**Status:** FIXED June 29, 2026
 
-Two S3 upload implementations exist:
+Two S3 upload implementations existed:
 - `storage.py` — the correct one: validates via `file_validator.py`, generates UUID filenames, sets `ACL=public-read`
-- `file.py` — the legacy one: uses original filename extensions, does NOT set ACL, does NOT validate file type
+- ~~`file.py`~~ — the legacy one: uses original filename extensions, does NOT set ACL, does NOT validate file type
 
-`file.py` is imported nowhere in the routers (confirmed by grep), but its presence is a maintenance hazard. If someone imports it by mistake, they bypass all file validation.
-
-**Remediation:** Delete `apps/api/src/utils/file.py`. It is dead code.
+**Remediation applied:** Deleted `apps/api/src/utils/file.py`. All upload endpoints import from `storage.py`.
 
 ---
 
@@ -376,17 +401,23 @@ JWT tokens are stored in `localStorage`, which is accessible to any JavaScript r
 | Priority | Finding | Effort | Status |
 |----------|---------|--------|--------|
 | ~~P0~~ | ~~C1: Remove `role` from `UpdateProfileRequest`~~ | ~~5 min~~ | **FIXED** |
-| ~~P0~~ | ~~C2: Generate strong `SECRET_KEY` + startup guard~~ | ~~15 min~~ | **FIXED** (startup guard; production key still needs to be set) |
+| ~~P0~~ | ~~C2: Generate strong `SECRET_KEY` + startup guard~~ | ~~15 min~~ | **FIXED** |
 | ~~P0~~ | ~~C3: Add workspace access check to WebSocket~~ | ~~15 min~~ | **FIXED** |
-| **P1 — Fix before production** | H1: Remove `email` from `MemberResponse` | 5 min | Open |
-| **P1 — Fix before production** | H2: Add authz check to `GET /matches/{id}` | 10 min | Open |
-| **P1 — Fix before production** | H3: Add file size limit | 15 min | Open |
-| **P1 — Fix before production** | H4: Guard demo mode with `ENVIRONMENT` check | 10 min | Open |
-| **P2 — Fix soon** | H5: Add webhook idempotency table | 30 min | Open |
+| ~~P1~~ | ~~H1: Remove `email` from `MemberResponse`~~ | ~~5 min~~ | **FIXED** |
+| ~~P1~~ | ~~H2: Add authz check to `GET /matches/{id}`~~ | ~~10 min~~ | **FIXED** |
+| ~~P1~~ | ~~H3: Add file size limit~~ | ~~15 min~~ | **FIXED** |
+| ~~P1~~ | ~~H4: Guard demo mode with `ENVIRONMENT` check~~ | ~~10 min~~ | **FIXED** |
+| ~~P2~~ | ~~H5: Add webhook idempotency table~~ | ~~30 min~~ | **FIXED** |
 | **P2 — Fix soon** | M1: Move WS token from query param to header | 20 min | Open |
-| **P2 — Fix soon** | M2: Add password min length | 5 min | Open |
-| **P2 — Fix soon** | M3: Make `CORS_ORIGINS` env-configurable | 10 min | Open |
-| **P3 — Backlog** | M4-M6, L1-L4 | Various | Open |
+| ~~P2~~ | ~~M2: Add password min length~~ | ~~5 min~~ | **FIXED** |
+| ~~P2~~ | ~~M3: Make `CORS_ORIGINS` env-configurable~~ | ~~10 min~~ | **FIXED** |
+| **P3 — Backlog** | M4: Membership tier enforcement | Medium | Open |
+| **P3 — Backlog** | M5: Draft project visibility | 15 min | Open |
+| ~~P3~~ | ~~M6: Delete `file.py` dead code~~ | ~~2 min~~ | **FIXED** |
+| **P3 — Backlog** | L1: Pin frontend dependency versions | 10 min | Open |
+| **P3 — Backlog** | L2: S3 credential startup check | 10 min | Open |
+| **P3 — Backlog** | L3: Admin seed key placeholder | 2 min | Open |
+| **P3 — Backlog** | L4: Migrate from localStorage to httpOnly cookies | High effort | Open |
 
 ---
 
@@ -396,8 +427,16 @@ JWT tokens are stored in `localStorage`, which is accessible to any JavaScript r
 |------|--------|
 | June 29, 2026 | Initial audit completed — 3 CRITICAL, 5 HIGH, 6 MEDIUM, 4 LOW findings |
 | June 29, 2026 | C1 fixed: Removed `role` from `UpdateProfileRequest` and `PATCH /api/users/me` |
-| June 29, 2026 | C2 fixed: Added SECRET_KEY startup guard in `main.py` lifespan |
+| June 29, 2026 | C2 fixed: Added SECRET_KEY startup guard in `main.py` lifespan; generated strong key in `.env` |
 | June 29, 2026 | C3 fixed: Added workspace access verification to WebSocket endpoint in `workspace_ws.py` |
+| June 29, 2026 | H1 fixed: Removed `email` from `MemberResponse` schema |
+| June 29, 2026 | H2 fixed: Added authorization check to `GET /api/matches/{id}` |
+| June 29, 2026 | H3 fixed: Added `MAX_FILE_SIZE` (50 MB) + `validate_file_size()` to all 5 upload endpoints |
+| June 29, 2026 | H4 fixed: Guarded Stripe demo mode with `ENVIRONMENT` check; fixed `_apply_tier` upsert logic |
+| June 29, 2026 | H5 fixed: Added `WebhookEvent` model + migration + idempotency check in webhook handler |
+| June 29, 2026 | M2 fixed: Added `min_length=8` to all password fields in auth schemas |
+| June 29, 2026 | M3 fixed: Changed `CORS_ORIGINS` from `@property` to env-configurable `List[str]` field |
+| June 29, 2026 | M6 fixed: Deleted dead code `apps/api/src/utils/file.py` |
 
 ---
 

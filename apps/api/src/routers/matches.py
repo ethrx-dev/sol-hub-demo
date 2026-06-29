@@ -205,6 +205,16 @@ async def get_match(match_id: uuid.UUID, db: DbSession, current_user: CurrentUse
     if not match:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
+    if current_user.role != "admin":
+        project = await db.get(Project, match.project_id)
+        innovator_id = project.innovator_id if project else None
+        if (
+            match.mentor_id != current_user.id
+            and match.investor_id != current_user.id
+            and innovator_id != current_user.id
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not part of this match")
+
     project = await db.get(Project, match.project_id)
     project_title = project.title if project else None
 

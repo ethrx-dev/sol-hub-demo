@@ -19,6 +19,7 @@ from src.models.refresh_token import RefreshToken
 from src.models.password_reset_token import PasswordResetToken
 from src.models.group_message import GroupMessage
 from src.models.verification_token import VerificationToken
+from src.models.webhook_event import WebhookEvent
 
 __all__ = [
     "User",
@@ -40,4 +41,5 @@ __all__ = [
     "Subscription",
     "GroupMessage",
     "VerificationToken",
+    "WebhookEvent",
 ]

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from src.deps import CurrentUser
 from src.schemas.media import UploadResponse
-from src.utils.file_validator import validate_file, generate_storage_key
+from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
 from src.utils.storage import upload_file
 
 router = APIRouter(prefix="/api/media", tags=["media"])
@@ -10,6 +10,7 @@ router = APIRouter(prefix="/api/media", tags=["media"])
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file_endpoint(file: UploadFile = File(...), current_user: CurrentUser = None):
     mime = validate_file(file)
+    validate_file_size(file)
     storage_key = generate_storage_key(file, mime)
     data = await file.read()
     url = await upload_file(storage_key, data, mime)

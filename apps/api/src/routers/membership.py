@@ -1,3 +1,6 @@
+import json
+import datetime
+
 import stripe
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -7,6 +10,7 @@ from src.config import settings
 from src.deps import DbSession, CurrentUser, CurrentAdmin
 from src.models.user import User
 from src.models.subscription import Subscription
+from src.models.webhook_event import WebhookEvent
 from src.schemas.membership import PlanResponse, CheckoutRequest, CheckoutResponse, PortalResponse
 
 router = APIRouter(prefix="/api/membership", tags=["membership"])
@@ -33,14 +37,20 @@ async def update_plan(tier: str, body: PlanResponse, _: CurrentAdmin):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
 
 
-def _apply_tier(user: User, tier: str, db: DbSession) -> None:
+async def _apply_tier(user: User, tier: str, db: DbSession) -> None:
     user.membership_tier = tier
-    sub = Subscription(
-        user_id=user.id,
-        tier=tier,
-        status="active",
-    )
-    db.add(sub)
+    result = await db.execute(select(Subscription).where(Subscription.user_id == user.id))
+    existing = result.scalar_one_or_none()
+    if existing:
+        existing.tier = tier
+        existing.status = "active"
+    else:
+        sub = Subscription(
+            user_id=user.id,
+            tier=tier,
+            status="active",
+        )
+        db.add(sub)
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
@@ -48,7 +58,9 @@ async def create_checkout_session(body: CheckoutRequest, db: DbSession, current_
     tier = _tier_from_price(body.price_id)
 
     if not settings.STRIPE_SECRET_KEY:
-        _apply_tier(current_user, tier, db)
+        if settings.ENVIRONMENT != "development":
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Stripe is not configured")
+        await _apply_tier(current_user, tier, db)
         await db.flush()
         return CheckoutResponse(url=body.success_url)
 
@@ -132,8 +144,16 @@ async def stripe_webhook(request: Request, db: DbSession):
     except (ValueError, stripe.error.SignatureVerificationError):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
 
+    event_id = event.get("id")
     event_type = event.get("type")
     data = event.get("data", {}).get("object", {})
+
+    # Idempotency check: skip already-processed events
+    existing = await db.execute(
+        select(WebhookEvent).where(WebhookEvent.event_id == event_id)
+    )
+    if existing.scalar_one_or_none():
+        return JSONResponse(content={"received": True, "duplicate": True})
 
     if event_type == "checkout.session.completed":
         user_id = data.get("metadata", {}).get("user_id")
@@ -161,10 +181,8 @@ async def stripe_webhook(request: Request, db: DbSession):
                 subscription.status = status_sub
                 subscription.tier = _tier_from_price(price_id)
                 if sub.get("current_period_start"):
-                    import datetime
                     subscription.current_period_start = datetime.datetime.fromtimestamp(sub["current_period_start"], tz=datetime.timezone.utc)
                 if sub.get("current_period_end"):
-                    import datetime
                     subscription.current_period_end = datetime.datetime.fromtimestamp(sub["current_period_end"], tz=datetime.timezone.utc)
 
                 if user:
@@ -182,10 +200,8 @@ async def stripe_webhook(request: Request, db: DbSession):
             if subscription:
                 subscription.status = "active"
                 if data.get("period_start"):
-                    import datetime
                     subscription.current_period_start = datetime.datetime.fromtimestamp(data["period_start"], tz=datetime.timezone.utc)
                 if data.get("period_end"):
-                    import datetime
                     subscription.current_period_end = datetime.datetime.fromtimestamp(data["period_end"], tz=datetime.timezone.utc)
                 user_result = await db.execute(select(User).where(User.id == subscription.user_id))
                 user = user_result.scalar_one_or_none()
@@ -216,6 +232,14 @@ async def stripe_webhook(request: Request, db: DbSession):
                 user = user_result.scalar_one_or_none()
                 if user:
                     user.membership_tier = "free"
+
+    db.add(WebhookEvent(
+        event_id=event_id,
+        event_type=event_type,
+        source="stripe",
+        payload=json.dumps(event) if event else None,
+    ))
+    await db.flush()
 
     return JSONResponse(content={"received": True})
 

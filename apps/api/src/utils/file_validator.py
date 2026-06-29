@@ -9,6 +9,8 @@ ALLOWED_DOC_MIMES = {"application/pdf", "application/vnd.openxmlformats-officedo
 
 ALLOWED_MIMES = ALLOWED_IMAGE_MIMES | ALLOWED_VIDEO_MIMES | ALLOWED_DOC_MIMES
 
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+
 
 def get_file_category(mime: str) -> str:
     if mime in ALLOWED_IMAGE_MIMES:
@@ -28,6 +30,14 @@ def validate_file(file: UploadFile) -> str:
             detail=f"File type '{mime}' is not allowed",
         )
     return mime
+
+
+def validate_file_size(file: UploadFile) -> None:
+    if file.size is not None and file.size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)} MB",
+        )
 
 
 def generate_storage_key(file: UploadFile, mime: str) -> str:

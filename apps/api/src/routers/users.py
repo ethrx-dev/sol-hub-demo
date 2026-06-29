@@ -8,7 +8,7 @@ from src.models.user import User
 from src.models.notification import Notification
 from src.schemas.user import UpdateProfileRequest, PublicProfileResponse, NotificationResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
-from src.utils.file_validator import validate_file, generate_storage_key, get_file_category
+from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key, get_file_category
 from src.utils.storage import upload_file
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -43,6 +43,7 @@ async def update_profile(body: UpdateProfileRequest, db: DbSession, current_user
 @router.post("/me/avatar", response_model=dict)
 async def upload_avatar(file: UploadFile = File(...), db: DbSession = None, current_user: CurrentUser = None):
     mime = validate_file(file)
+    validate_file_size(file)
     category = get_file_category(mime)
     if category != "image":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only image files are allowed for avatar")
@@ -60,6 +61,7 @@ async def upload_avatar(file: UploadFile = File(...), db: DbSession = None, curr
 @router.post("/me/video", response_model=dict)
 async def upload_intro_video(file: UploadFile = File(...), db: DbSession = None, current_user: CurrentUser = None):
     mime = validate_file(file)
+    validate_file_size(file)
     category = get_file_category(mime)
     if category != "video":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only video files are allowed for intro video")

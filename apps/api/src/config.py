@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings
 from typing import List
-import json
 
 
 class Settings(BaseSettings):
@@ -24,9 +23,7 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: str = "development"
 
-    @property
-    def CORS_ORIGINS(self) -> List[str]:
-        return ["http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
     SENTRY_DSN: str | None = None
     ADMIN_SEED_KEY: str = ""

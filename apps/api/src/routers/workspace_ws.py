@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
 from sqlalchemy import select
 
-from src.deps import get_db
+from src.database import async_session
 from src.models.user import User
 from src.models.project import Project
 from src.models.match import Match
@@ -36,7 +36,7 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    async with get_db() as db:
+    async with async_session() as db:
         project = await db.execute(
             select(Project).where(Project.id == project_id, Project.is_deleted == False)
         )
@@ -83,7 +83,7 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
             if not content:
                 continue
 
-            async with get_db() as db:
+            async with async_session() as db:
                 user = await db.get(User, user_id)
                 if not user:
                     continue
