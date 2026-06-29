@@ -21,6 +21,7 @@ from src.models.group_message import GroupMessage
 from src.models.verification_token import VerificationToken
 from src.models.webhook_event import WebhookEvent
 from src.models.connection import Connection
+from src.models.forum import ForumCategory, ForumThread, ForumReply
 
 __all__ = [
     "User",
@@ -44,4 +45,7 @@ __all__ = [
     "VerificationToken",
     "WebhookEvent",
     "Connection",
+    "ForumCategory",
+    "ForumThread",
+    "ForumReply",
 ]
