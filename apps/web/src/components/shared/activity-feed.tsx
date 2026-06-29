@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, Send, Globe, Users, Lock } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -19,6 +19,7 @@ interface Post {
   comments: number;
   liked: boolean;
   createdAt: string;
+  privacy?: string;
 }
 
 interface ActivityFeedProps {
@@ -139,8 +140,20 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
               </Avatar>
               <div>
                 <p className="text-sm font-medium">{post.authorName}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   {formatTimeAgo(post.createdAt)}
+                  {post.privacy === "connections_only" && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                      <Users className="h-2.5 w-2.5" />
+                      Connections
+                    </span>
+                  )}
+                  {post.privacy === "private" && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                      <Lock className="h-2.5 w-2.5" />
+                      Private
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

@@ -6,6 +6,7 @@ from .common import BaseResponseWithUUID
 class CreatePostRequest(BaseModel):
     content: str
     media_urls: list[str] = []
+    privacy: str = "public"
 
 
 class CommentResponse(BaseResponseWithUUID):
@@ -35,6 +36,7 @@ class PostResponse(BaseResponseWithUUID):
     comment_count: int = 0
     is_liked: bool = False
     is_deleted: bool = False
+    privacy: str = "public"
     created_at: datetime | None = None
     updated_at: datetime | None = None
     comments: list[CommentResponse] = []

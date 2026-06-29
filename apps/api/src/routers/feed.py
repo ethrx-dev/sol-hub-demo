@@ -1,10 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status, Query
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, or_, and_
 
 from src.deps import DbSession, CurrentUser
-from src.models.post import Post
+from src.models.post import Post, PostPrivacy
+from src.models.connection import Connection
 from src.models.comment import Comment
 from src.models.like import Like
 from src.models.user import User
@@ -41,7 +42,21 @@ async def get_feed(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
-    base_where = [Post.is_deleted == False]
+    following_subq = select(Connection.following_id).where(
+        Connection.follower_id == current_user.id
+    ).scalar_subquery()
+
+    base_where = [
+        Post.is_deleted == False,
+        or_(
+            Post.privacy == PostPrivacy.public,
+            Post.author_id == current_user.id,
+            and_(
+                Post.privacy == PostPrivacy.connections_only,
+                Post.author_id.in_(following_subq),
+            ),
+        ),
+    ]
     if media_type:
         base_where.append(Post.media_urls != [])
 
@@ -81,6 +96,7 @@ async def get_feed(
             author_avatar=author_avatar,
             content=post.content,
             media_urls=urls,
+            privacy=post.privacy.value,
             like_count=like_count or 0,
             comment_count=comment_count or 0,
             is_liked=is_liked,
@@ -94,10 +110,12 @@ async def get_feed(
 
 @router.post("/posts", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(body: CreatePostRequest, db: DbSession, current_user: CurrentUser):
+    privacy_value = body.privacy if body.privacy in ("public", "connections_only", "private") else "public"
     post = Post(
         author_id=current_user.id,
         content=body.content,
         media_urls=body.media_urls,
+        privacy=PostPrivacy(privacy_value),
     )
     db.add(post)
     await db.flush()
@@ -109,6 +127,7 @@ async def create_post(body: CreatePostRequest, db: DbSession, current_user: Curr
         author_avatar=current_user.avatar_url,
         content=post.content,
         media_urls=post.media_urls or [],
+        privacy=post.privacy.value,
         like_count=0,
         comment_count=0,
         is_liked=False,
@@ -119,10 +138,25 @@ async def create_post(body: CreatePostRequest, db: DbSession, current_user: Curr
 
 @router.get("/posts/{post_id}", response_model=PostResponse)
 async def get_post(post_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
+    following_subq = select(Connection.following_id).where(
+        Connection.follower_id == current_user.id
+    ).scalar_subquery()
+
     result = await db.execute(
         select(Post, User.full_name, User.avatar_url)
         .join(User, Post.author_id == User.id)
-        .where(Post.id == post_id, Post.is_deleted == False)
+        .where(
+            Post.id == post_id,
+            Post.is_deleted == False,
+            or_(
+                Post.privacy == PostPrivacy.public,
+                Post.author_id == current_user.id,
+                and_(
+                    Post.privacy == PostPrivacy.connections_only,
+                    Post.author_id.in_(following_subq),
+                ),
+            ),
+        )
     )
     row = result.one_or_none()
     if not row:
@@ -158,6 +192,7 @@ async def get_post(post_id: uuid.UUID, db: DbSession, current_user: CurrentUser)
         author_avatar=author_avatar,
         content=post.content,
         media_urls=post.media_urls or [],
+        privacy=post.privacy.value,
         like_count=like_count or 0,
         comment_count=comment_count or 0,
         is_liked=is_liked,

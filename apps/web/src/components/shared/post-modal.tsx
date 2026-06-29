@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { Plus, Image as ImageIcon, X, Loader2, Globe, Users, Lock } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Textarea } from "@/src/components/ui/textarea";
 import {
@@ -25,6 +25,7 @@ export function PostModal({ onCreated }: PostModalProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [privacy, setPrivacy] = useState("public");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +78,7 @@ export function PostModal({ onCreated }: PostModalProps) {
       await api.post("/feed/posts", {
         content: content.trim(),
         media_urls: imageUrl ? [imageUrl] : [],
+        privacy,
       });
       toast.success("Post created");
       setContent("");
@@ -111,6 +113,28 @@ export function PostModal({ onCreated }: PostModalProps) {
             className="resize-none"
             autoFocus
           />
+
+          <div className="flex items-center gap-2">
+            {[
+              { value: "public", icon: Globe, label: "Public" },
+              { value: "connections_only", icon: Users, label: "Connections" },
+              { value: "private", icon: Lock, label: "Private" },
+            ].map(({ value, icon: Icon, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setPrivacy(value)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  privacy === value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
 
           {imageUrl && (
             <div className="relative overflow-hidden rounded-lg bg-muted">

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Globe, Users, Lock } from "lucide-react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
@@ -98,16 +98,28 @@ export default function PostDetailPage({
                 {post.author_name?.split(" ").map((n: string) => n[0]).join("") || "U"}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="text-sm font-medium">{post.author_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(post.created_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
+              <div>
+                <p className="text-sm font-medium">{post.author_name}</p>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {new Date(post.created_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  {post.privacy === "connections_only" && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                      <Users className="h-2.5 w-2.5" />
+                      Connections
+                    </span>
+                  )}
+                  {post.privacy === "private" && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                      <Lock className="h-2.5 w-2.5" />
+                      Private
+                    </span>
+                  )}
+                </p>
+              </div>
           </div>
 
           <p className="mt-4 whitespace-pre-wrap">{post.content}</p>
