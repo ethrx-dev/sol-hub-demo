@@ -9,6 +9,8 @@ from src.models.match import Match
 from src.models.document import Document
 from src.models.message import Message
 from src.models.user import User
+from src.utils.email import send_message_notification
+from src.utils.notifications import create_notification
 from src.schemas.workspace import (
     DocumentResponse,
     SendMessageRequest,
@@ -186,6 +188,34 @@ async def send_message(
     )
     db.add(message)
     await db.flush()
+
+    # Notify other workspace members
+    project_result = await db.execute(
+        select(Project).where(Project.id == project_id, Project.is_deleted == False)
+    )
+    project = project_result.scalar_one_or_none()
+    if project:
+        other_members = []
+        if project.innovator_id != current_user.id:
+            other_members.append(project.innovator_id)
+        match_result = await db.execute(
+            select(Match).where(Match.project_id == project_id, Match.status == "accepted")
+        )
+        for m in match_result.scalars().all():
+            for mid in [m.mentor_id, m.investor_id]:
+                if mid and mid != current_user.id:
+                    other_members.append(mid)
+
+        for uid in set(other_members):
+            await create_notification(
+                db, str(uid), "New Message",
+                f"{current_user.full_name} sent a message in \"{project.title}\"",
+                notification_type="message",
+            )
+            u = await db.get(User, uid)
+            if u:
+                await send_message_notification(u.email, current_user.full_name, project.title)
+
     return MessageResponse(
         id=str(message.id),
         project_id=str(message.project_id),

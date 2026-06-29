@@ -44,6 +44,7 @@ class UserResponse(BaseResponseWithUUID):
     full_name: str
     avatar_url: str | None = None
     role: str
+    is_super_admin: bool = False
     bio: str | None = None
     skills: list = []
     sectors_of_interest: list = []

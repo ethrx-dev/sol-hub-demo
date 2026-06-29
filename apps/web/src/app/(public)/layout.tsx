@@ -52,6 +52,13 @@ export default function PublicLayout({
                 <li><span className="text-sm text-white/70">help@solhub.com</span></li>
               </ul>
             </div>
+            <div>
+              <h4 className="text-sm font-semibold font-heading text-white">Legal</h4>
+              <ul className="mt-3 space-y-2">
+                <li><Link href="/terms" className="text-sm text-white/70 hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="text-sm text-white/70 hover:text-primary transition-colors">Privacy Policy</Link></li>
+              </ul>
+            </div>
           </div>
           <div className="mt-8 border-t border-white/20 pt-8 text-center text-sm text-white/50">
             &copy; {new Date().getFullYear()} SOL Hub. All rights reserved.

@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/src/components/ui/card";
+import { Badge } from "@/src/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { useAuth } from "@/src/lib/auth";
 import { toast } from "sonner";
 import Link from "next/link";
 import { api } from "@/src/lib/api-client";
+import { Loader2 } from "lucide-react";
+import { VideoUpload } from "@/src/components/shared/video-upload";
+import { ErrorBoundary } from "@/src/components/shared/error-boundary";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -22,6 +26,38 @@ export default function SettingsPage() {
     confirm: "",
   });
   const [saving, setSaving] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({
+    matches: true,
+    messages: true,
+    milestones: true,
+    activity: true,
+    email_matches: true,
+    email_messages: true,
+    email_milestones: true,
+    email_activity: true,
+  });
+  const [notifLoading, setNotifLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .get<any>("/users/me/notification-preferences")
+      .then((data) => {
+        if (data) {
+          setNotifPrefs({
+            matches: data.matches ?? true,
+            messages: data.messages ?? true,
+            milestones: data.milestones ?? true,
+            activity: data.activity ?? true,
+            email_matches: data.email_matches ?? true,
+            email_messages: data.email_messages ?? true,
+            email_milestones: data.email_milestones ?? true,
+            email_activity: data.email_activity ?? true,
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setNotifLoading(false));
+  }, []);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +93,18 @@ export default function SettingsPage() {
     }
   };
 
+  const handleNotifSave = async () => {
+    setSaving(true);
+    try {
+      await api.patch("/users/me/notification-preferences", notifPrefs);
+      toast.success("Notification preferences saved");
+    } catch {
+      toast.error("Failed to save preferences");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
@@ -66,6 +114,7 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
@@ -151,54 +200,142 @@ export default function SettingsPage() {
                 Choose what notifications you receive
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { label: "New match notifications", id: "matches" },
-                { label: "Message notifications", id: "messages" },
-                { label: "Milestone updates", id: "milestones" },
-                { label: "Community activity", id: "activity" },
-              ].map((item) => (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-lg border p-4"
-                >
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm">{item.label}</span>
-                </label>
-              ))}
-              <Button>Save Preferences</Button>
+            <CardContent className="space-y-6">
+              {notifLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm font-medium mb-2">In-App Notifications</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: "New match notifications", key: "matches" as const },
+                        { label: "Message notifications", key: "messages" as const },
+                        { label: "Milestone updates", key: "milestones" as const },
+                        { label: "Community activity", key: "activity" as const },
+                      ].map((item) => (
+                        <label
+                          key={item.key}
+                          className="flex items-center gap-3 rounded-lg border p-4"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={notifPrefs[item.key]}
+                            onChange={(e) =>
+                              setNotifPrefs((p) => ({ ...p, [item.key]: e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-2">Email Notifications</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: "Match updates via email", key: "email_matches" as const },
+                        { label: "Messages via email", key: "email_messages" as const },
+                        { label: "Milestone updates via email", key: "email_milestones" as const },
+                        { label: "Activity digests via email", key: "email_activity" as const },
+                      ].map((item) => (
+                        <label
+                          key={item.key}
+                          className="flex items-center gap-3 rounded-lg border p-4"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={notifPrefs[item.key]}
+                            onChange={(e) =>
+                              setNotifPrefs((p) => ({ ...p, [item.key]: e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <Button onClick={handleNotifSave} loading={saving}>
+                    Save Preferences
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="media" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Media</CardTitle>
+              <CardDescription>Upload your profile picture and intro video</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ErrorBoundary>
+                <VideoUpload
+                  currentUrl={user?.avatar_url}
+                  onUploaded={() => {}}
+                />
+              </ErrorBoundary>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="billing" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing & Membership</CardTitle>
-              <CardDescription>
-                Manage your subscription and payment methods
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg bg-secondary/50 p-4">
-                <p className="text-sm font-medium">Current Plan</p>
-                <p className="text-2xl font-bold">Basic</p>
-                <p className="text-sm text-muted-foreground">$29/month</p>
-              </div>
-              <Link
-                href="/settings/billing"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-              >
-                Manage Billing
-              </Link>
-            </CardContent>
-          </Card>
+          <BillingTab />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function BillingTab() {
+  const [sub, setSub] = useState<{ tier: string; status: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get<{ tier: string; status: string }>("/membership/my-subscription")
+      .then((data) => setSub(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const tierName = sub?.tier ? sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1) : "Free";
+  const isPaid = sub?.tier && sub.tier !== "free";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Billing & Membership</CardTitle>
+        <CardDescription>Manage your subscription and payment methods</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
+          <div>
+            <p className="text-sm font-medium">Current Plan</p>
+            <p className="text-2xl font-bold">{tierName}</p>
+            <p className="text-sm text-muted-foreground capitalize">{sub?.status || "inactive"}</p>
+          </div>
+          <Badge variant={isPaid ? "success" : "secondary"}>{isPaid ? "Active" : "Free"}</Badge>
+        </div>
+        <Link href="/settings/billing">
+          <Button variant="outline">Manage Billing</Button>
+        </Link>
+      </CardContent>
+    </Card>
   );
 }

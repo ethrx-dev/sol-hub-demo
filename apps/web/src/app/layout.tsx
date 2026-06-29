@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
 import { Providers } from "@/src/components/providers";
 import { Toaster } from "@/src/components/ui/toast";
+import { ErrorBoundary } from "@/src/components/shared/error-boundary";
+import { Analytics } from "@/src/components/shared/analytics";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -30,8 +32,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${roboto.variable} font-sans`}>
-        <Providers>{children}</Providers>
+        <ErrorBoundary>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );

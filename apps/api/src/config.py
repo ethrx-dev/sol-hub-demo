@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "SOL Hub <noreply@solhub.com>"
+
     ENVIRONMENT: str = "development"
 
     @property

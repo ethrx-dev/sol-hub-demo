@@ -1,62 +1,70 @@
-import Link from "next/link";
-import { Check } from "lucide-react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Check, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
+import { api } from "@/src/lib/api-client";
+import { useAuth } from "@/src/lib/auth";
+import { toast } from "sonner";
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "/month",
-    description: "Explore the community and get started.",
-    features: [
-      "Community hub access",
-      "Basic profile",
-      "Browse public resources",
-      "Join discussion groups",
-    ],
-    cta: "Get Started",
-    href: "/register",
-    popular: false,
-  },
-  {
-    name: "Basic",
-    price: "$29",
-    period: "/month",
-    description: "For active members looking to engage deeply.",
-    features: [
-      "Everything in Free",
-      "Submit projects",
-      "Match with mentors/investors",
-      "Messaging & collaboration",
-      "Milestone tracking",
-      "Resource library access",
-    ],
-    cta: "Start Free Trial",
-    href: "/register",
-    popular: true,
-  },
-  {
-    name: "Premium",
-    price: "$99",
-    period: "/month",
-    description: "For serious founders and active investors.",
-    features: [
-      "Everything in Basic",
-      "Priority matching",
-      "Video pitch reviews",
-      "Dedicated success manager",
-      "Investment analytics",
-      "API access",
-      "Early access to new features",
-    ],
-    cta: "Go Premium",
-    href: "/register",
-    popular: false,
-  },
+interface Plan {
+  tier: string;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
+}
+
+const FALLBACK_PLANS: Plan[] = [
+  { tier: "free", name: "Free", price: 0, description: "Explore the community and get started.", features: ["Community hub access", "Basic profile", "Browse public resources", "Join discussion groups"] },
+  { tier: "innovator", name: "Innovator", price: 19.99, description: "For climate innovators building ventures.", features: ["Create projects", "Apply to matches", "Access workspace", "Messaging & collaboration", "Milestone tracking"] },
+  { tier: "mentor", name: "Mentor", price: 29.99, description: "For mentors and advisors sharing expertise.", features: ["Match with projects", "Full workspace access", "Create resources", "Priority matching"] },
+  { tier: "investor", name: "Investor", price: 49.99, description: "For investors and funders backing ventures.", features: ["Match with projects", "Full workspace access", "Investment dashboard", "Video pitch reviews"] },
 ];
 
 export default function PricingPage() {
+  const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
+  const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    api.get<Plan[]>("/membership/plans")
+      .then(setPlans)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleCheckout = async (planTier: string) => {
+    if (planTier === "free") {
+      window.location.href = "/register";
+      return;
+    }
+
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setCheckingOut(planTier);
+    try {
+      const priceId = `price_${planTier}`;
+      const { url } = await api.post<{ url: string }>("/membership/checkout", {
+        price_id: priceId,
+        success_url: `${window.location.origin}/settings/billing?success=true`,
+        cancel_url: `${window.location.origin}/pricing?canceled=true`,
+      });
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err?.message || "Checkout failed. Stripe may not be configured.");
+    } finally {
+      setCheckingOut(null);
+    }
+  };
+
+  const popular = "innovator";
+
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="absolute -top-10 -right-10 opacity-[0.04] pointer-events-none">
@@ -75,15 +83,15 @@ export default function PricingPage() {
         </p>
       </section>
 
-      <section className="mt-16 grid gap-8 lg:grid-cols-3">
-        {PLANS.map((plan) => (
+      <section className="mt-16 grid gap-8 lg:grid-cols-4">
+        {plans.map((plan) => (
           <Card
-            key={plan.name}
+            key={plan.tier}
             className={`relative flex flex-col ${
-              plan.popular ? "border-primary shadow-lg ring-1 ring-primary" : ""
+              plan.tier === popular ? "border-primary shadow-lg ring-1 ring-primary" : ""
             }`}
           >
-            {plan.popular && (
+            {plan.tier === popular && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-[0_10px_0_10px] bg-primary px-4 py-1 text-xs font-medium text-primary-foreground">
                 Most Popular
               </div>
@@ -91,8 +99,10 @@ export default function PricingPage() {
             <CardContent className="flex flex-1 flex-col p-8">
               <h3 className="text-xl font-bold font-heading">{plan.name}</h3>
               <div className="mt-4">
-                <span className="text-4xl font-bold font-heading">{plan.price}</span>
-                <span className="text-sm text-muted-foreground">{plan.period}</span>
+                <span className="text-4xl font-bold font-heading">
+                  ${plan.price === 0 ? "0" : plan.price.toFixed(2)}
+                </span>
+                {plan.price > 0 && <span className="text-sm text-muted-foreground">/month</span>}
               </div>
               <p className="mt-2 text-sm text-muted-foreground">{plan.description}</p>
               <ul className="mt-6 flex-1 space-y-3">
@@ -104,15 +114,18 @@ export default function PricingPage() {
                 ))}
               </ul>
               <div className="mt-8 w-full">
-                <Link href={plan.href}>
-                  <Button
-                    variant={plan.popular ? "default" : "outline"}
-                    className="w-full"
-                    corner="sol"
-                  >
-                    {plan.cta}
-                  </Button>
-                </Link>
+                <Button
+                  variant={plan.tier === popular ? "default" : "outline"}
+                  className="w-full"
+                  corner="sol"
+                  disabled={checkingOut === plan.tier}
+                  onClick={() => handleCheckout(plan.tier)}
+                >
+                  {checkingOut === plan.tier ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {plan.price === 0 ? "Get Started" : "Subscribe"}
+                </Button>
               </div>
             </CardContent>
           </Card>

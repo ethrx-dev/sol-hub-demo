@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/src/components/ui/card";
+import { ShapoWidget } from "@/src/components/shared/ShapoWidget";
 
 const FEATURES = [
   {
@@ -142,6 +143,29 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials */}
+      {process.env.NEXT_PUBLIC_SHAPO_WIDGET_ID && (
+        <section className="relative overflow-hidden py-20 bg-sage-light/20">
+          <div className="absolute -left-10 top-0 opacity-[0.05] pointer-events-none rotate-12">
+            <img src="/sol-asset-3.svg" alt="" className="w-[200px]" />
+          </div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold font-heading">What Our Community Says</h2>
+              <p className="mt-3 text-muted-foreground">
+                Hear from innovators, mentors, and investors who are part of SOL Hub.
+              </p>
+            </div>
+            <div className="mt-12">
+              <ShapoWidget
+                widgetId={process.env.NEXT_PUBLIC_SHAPO_WIDGET_ID}
+                className="mx-auto max-w-5xl"
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Mission */}
       <section className="relative bg-sage-light/30 py-20 overflow-hidden">

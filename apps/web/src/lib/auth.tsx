@@ -18,6 +18,7 @@ export interface User {
   email: string;
   full_name: string;
   role: UserRole;
+  is_super_admin?: boolean;
   avatar_url?: string;
   onboarding_completed: boolean;
   bio?: string;

@@ -3,10 +3,11 @@ from datetime import datetime, timezone, timedelta
 import hashlib
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 
 from src.deps import DbSession, CurrentUser
+from src.middleware.rate_limit import limiter
 from src.models.user import User
 from src.models.refresh_token import RefreshToken
 from src.models.password_reset_token import PasswordResetToken
@@ -21,13 +22,14 @@ from src.schemas.auth import (
     UserResponse,
 )
 from src.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from src.utils.email import send_password_reset_email
+from src.utils.email import send_password_reset_email, send_welcome_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: DbSession):
+@limiter.limit("5/minute")
+async def register(request: Request, body: RegisterRequest, db: DbSession):
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -51,11 +53,14 @@ async def register(body: RegisterRequest, db: DbSession):
         expires_at=expires_at,
     ))
 
+    await send_welcome_email(user.email, user.full_name)
+
     return TokenResponse(access_token=access_token, refresh_token=refresh_token_str)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: DbSession):
+@limiter.limit("10/minute")
+async def login(request: Request, body: LoginRequest, db: DbSession):
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
@@ -136,7 +141,8 @@ async def change_password(body: ChangePasswordRequest, db: DbSession, current_us
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
-async def forgot_password(body: ForgotPasswordRequest, db: DbSession):
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, body: ForgotPasswordRequest, db: DbSession):
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
     if not user:
@@ -157,7 +163,8 @@ async def forgot_password(body: ForgotPasswordRequest, db: DbSession):
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(body: ResetPasswordRequest, db: DbSession):
+@limiter.limit("5/hour")
+async def reset_password(request: Request, body: ResetPasswordRequest, db: DbSession):
     token_hash = hashlib.sha256(body.token.encode()).hexdigest()
     result = await db.execute(
         select(PasswordResetToken).where(

@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 @router.get("/{user_id}", response_model=PublicProfileResponse)
-async def get_public_profile(user_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
+async def get_public_profile(user_id: uuid.UUID, db: DbSession):
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()
     if not user:
@@ -29,6 +29,10 @@ async def update_profile(body: UpdateProfileRequest, db: DbSession, current_user
         current_user.full_name = body.full_name
     if body.bio is not None:
         current_user.bio = body.bio
+    if body.role is not None:
+        if body.role not in ("innovator", "mentor", "investor", "admin"):
+            raise HTTPException(status_code=400, detail=f"Invalid role: {body.role}")
+        current_user.role = body.role
     if body.skills is not None:
         current_user.skills = body.skills
     if body.sectors_of_interest is not None:

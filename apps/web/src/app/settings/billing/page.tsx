@@ -1,18 +1,67 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Download } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
+import { api } from "@/src/lib/api-client";
+import { toast } from "sonner";
 
-const invoices = [
-  { id: "INV-001", date: "Jun 1, 2026", amount: "$29.00", status: "paid" },
-  { id: "INV-002", date: "May 1, 2026", amount: "$29.00", status: "paid" },
-  { id: "INV-003", date: "Apr 1, 2026", amount: "$29.00", status: "paid" },
-];
+interface Subscription {
+  tier: string;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+}
 
 export default function BillingPage() {
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  useEffect(() => {
+    api.get<Subscription>("/membership/my-subscription")
+      .then(setSub)
+      .catch(() => setSub(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    try {
+      const { url } = await api.post<{ url: string }>("/membership/portal");
+      window.location.href = url;
+    } catch {
+      toast.error("Failed to open billing portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+      active: "success",
+      past_due: "warning",
+      canceled: "destructive",
+      incomplete: "warning",
+      inactive: "secondary",
+    };
+    return map[status] || "secondary";
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 text-center sm:px-6 lg:px-8">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const tierName = sub?.tier ? sub.tier.charAt(0).toUpperCase() + sub.tier.slice(1) : "Free";
+  const isPaid = sub?.tier && sub.tier !== "free";
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -29,78 +78,79 @@ export default function BillingPage() {
         <Card>
           <CardHeader>
             <CardTitle>Current Plan</CardTitle>
-            <CardDescription>You are on the Basic plan</CardDescription>
+            <CardDescription>
+              {isPaid ? `You are on the ${tierName} plan` : "You are on the Free plan"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
               <div>
-                <p className="font-semibold">Basic Plan</p>
-                <p className="text-sm text-muted-foreground">$29/month</p>
+                <p className="font-semibold">{tierName} Plan</p>
+                <p className="text-sm text-muted-foreground">
+                  {sub?.current_period_end
+                    ? `Renews ${new Date(sub.current_period_end).toLocaleDateString()}`
+                    : isPaid
+                      ? "Active"
+                      : "No active subscription"}
+                </p>
               </div>
-              <Badge variant="success">Active</Badge>
+              <Badge variant={statusBadge(sub?.status || "inactive")}>
+                {sub?.status || "inactive"}
+              </Badge>
             </div>
-            <div className="flex gap-3">
-              <Button variant="outline">Upgrade Plan</Button>
-              <Button variant="outline">Cancel Subscription</Button>
-            </div>
+            {isPaid && (
+              <Button variant="outline" onClick={handlePortal} disabled={portalLoading}>
+                {portalLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Manage Billing
+              </Button>
+            )}
+            {!isPaid && (
+              <Link href="/pricing">
+                <Button variant="outline">View Plans</Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Payment Method</CardTitle>
-            <CardDescription>Manage your payment details</CardDescription>
+            <CardDescription>Managed securely via Stripe</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3 rounded-lg border p-4">
               <CreditCard className="h-6 w-6 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Visa ending in 4242</p>
-                <p className="text-xs text-muted-foreground">Expires 12/2027</p>
+                <p className="text-sm font-medium">
+                  {isPaid ? "Managed via Stripe" : "No payment method on file"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isPaid ? "Update in Stripe Customer Portal" : "Add one when you subscribe"}
+                </p>
               </div>
-              <Button variant="outline" size="sm" className="ml-auto">
-                Update
-              </Button>
+              {isPaid && (
+                <Button variant="outline" size="sm" className="ml-auto" onClick={handlePortal} disabled={portalLoading}>
+                  Update
+                </Button>
+              )}
             </div>
-            <Button variant="link" className="mt-2">
-              Add payment method
-            </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Invoice History</CardTitle>
-            <CardDescription>View and download past invoices</CardDescription>
+            <CardDescription>View and manage invoices via Stripe</CardDescription>
           </CardHeader>
           <CardContent>
-            {invoices.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No invoices yet.</p>
+            {isPaid ? (
+              <Button variant="outline" onClick={handlePortal} disabled={portalLoading}>
+                View Invoices
+              </Button>
             ) : (
-              <div className="space-y-2">
-                {invoices.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{inv.id}</p>
-                      <p className="text-xs text-muted-foreground">{inv.date}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm">{inv.amount}</span>
-                      <Badge
-                        variant={inv.status === "paid" ? "success" : "warning"}
-                      >
-                        {inv.status}
-                      </Badge>
-                      <button className="text-muted-foreground hover:text-foreground">
-                        <Download className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground">No invoices yet.</p>
             )}
           </CardContent>
         </Card>

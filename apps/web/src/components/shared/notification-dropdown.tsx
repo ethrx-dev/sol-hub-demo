@@ -1,48 +1,45 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Bell } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { api } from "@/src/lib/api-client";
 import { useNotificationStore } from "@/src/stores/notification-store";
 
-interface Notification {
+interface BackendNotification {
   id: string;
   title: string;
   message: string;
-  read: boolean;
-  createdAt: string;
+  notification_type: string;
+  is_read: boolean;
+  created_at: string;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "New match",
-    message: "You've been matched with EcoTech Solutions",
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Project update",
-    message: "GreenGrid AI reached 50% funding",
-    read: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Message received",
-    message: "New message from Sarah Chen",
-    read: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+}
 
 export function NotificationDropdown() {
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [notifications, setNotifications] = useState<BackendNotification[]>([]);
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
   const ref = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await api.get<PaginatedResponse<BackendNotification>>("/users/me/notifications");
+      setNotifications(data.items || []);
+      setUnreadCount(data.items?.filter((n) => !n.is_read).length || 0);
+    } catch {
+      // silently fail
+    }
+  }, [setUnreadCount]);
+
+  useEffect(() => {
+    if (open) fetchNotifications();
+  }, [open, fetchNotifications]);
 
   useEffect(() => {
     setUnreadCount(unreadCount);
@@ -58,10 +55,13 @@ export function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const markAllRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+  const markAllRead = async () => {
+    try {
+      await api.patch("/users/me/notifications/read-all");
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {
+      // silently fail
+    }
   };
 
   return (
@@ -102,7 +102,7 @@ export function NotificationDropdown() {
                   key={notification.id}
                   className={cn(
                     "border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent/50",
-                    !notification.read && "bg-primary/5"
+                    !notification.is_read && "bg-primary/5"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -112,12 +112,12 @@ export function NotificationDropdown() {
                         {notification.message}
                       </p>
                     </div>
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                     )}
                   </div>
                   <p className="mt-1 text-[10px] text-muted-foreground">
-                    {formatTimeAgo(notification.createdAt)}
+                    {formatTimeAgo(notification.created_at)}
                   </p>
                 </div>
               ))

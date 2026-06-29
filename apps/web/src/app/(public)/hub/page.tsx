@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { ActivityFeed } from "@/src/components/shared/activity-feed";
+import { PostModal } from "@/src/components/shared/post-modal";
 import { api } from "@/src/lib/api-client";
 
 export default function HubPage() {
@@ -62,10 +63,7 @@ export default function HubPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Community Hub</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Post
-        </Button>
+        <PostModal onCreated={() => fetchPosts()} />
       </div>
 
       <Tabs defaultValue="feed">

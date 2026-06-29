@@ -8,17 +8,22 @@ import { Input } from "@/src/components/ui/input";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { api } from "@/src/lib/api-client";
+import { GroupModal } from "@/src/components/shared/group-modal";
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const fetchGroups = () => {
     api.get("/groups/?limit=50")
       .then((data: any) => setGroups(data.items || []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchGroups();
   }, []);
 
   const filtered = groups.filter(
@@ -31,10 +36,12 @@ export default function GroupsPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Groups</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Group
-        </Button>
+        <GroupModal onCreated={fetchGroups}>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Group
+          </Button>
+        </GroupModal>
       </div>
 
       <Input
