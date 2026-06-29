@@ -90,7 +90,7 @@ export default function ResourcesPage() {
 
   useEffect(() => {
     api.get("/resources/?limit=50")
-      .then((data: any) => setResources(data.items || []))
+      .then((data: any) => setResources((data.items && data.items.length > 0) ? data.items : fallbackResources))
       .catch(() => setResources(fallbackResources))
       .finally(() => setLoading(false));
   }, []);
