@@ -1,4 +1,5 @@
 import uuid
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from src.database import get_db
 from src.deps import get_current_user
 from src.models.gallery import Album, AlbumMedia
+from src.models.post import Post
 from src.models.user import User
 from src.schemas.gallery import (
     CreateAlbumRequest,
@@ -207,3 +209,53 @@ async def delete_media(
     if media.album.author_id != current_user.id and not current_user.is_super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     await db.delete(media)
+
+
+@router.get("/feed-media")
+async def get_feed_media(
+    media_type: str | None = Query(None, alias="type"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(30, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Post).where(
+        Post.is_deleted == False,
+        Post.media_urls.isnot(None),
+        func.jsonb_array_length(Post.media_urls) > 0,
+    )
+    count_q = select(func.count(Post.id)).where(
+        Post.is_deleted == False,
+        Post.media_urls.isnot(None),
+        func.jsonb_array_length(Post.media_urls) > 0,
+    )
+    query = query.order_by(Post.created_at.desc()).options(selectinload(Post.author))
+    result = await db.execute(query.offset(skip).limit(limit))
+    posts = result.scalars().all()
+
+    total_result = await db.execute(count_q)
+    total = total_result.scalar() or 0
+
+    items = []
+    for post in posts:
+        urls = post.media_urls or []
+        for url in urls:
+            is_video = bool(re.match(r".*\.(mp4|webm|mov|avi|mkv|wmv)(\?.*)?$", url, re.IGNORECASE))
+            is_photo = bool(re.match(r".*\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$", url, re.IGNORECASE))
+            mt = "video" if is_video else ("photo" if is_photo else None)
+            if media_type and mt != media_type:
+                continue
+            if not mt:
+                continue
+            items.append({
+                "id": str(post.id),
+                "url": url,
+                "media_type": mt,
+                "caption": post.content[:200] if post.content else None,
+                "author_id": str(post.author_id),
+                "author_name": post.author.full_name or post.author.email,
+                "author_avatar": post.author.avatar_url,
+                "post_id": str(post.id),
+                "created_at": post.created_at.isoformat(),
+            })
+
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
