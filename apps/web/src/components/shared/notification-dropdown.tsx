@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Bell } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { api } from "@/src/lib/api-client";
@@ -123,6 +124,13 @@ export function NotificationDropdown() {
               ))
             )}
           </div>
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block border-t px-4 py-2 text-center text-xs font-medium text-primary hover:bg-accent/50"
+          >
+            View all notifications
+          </Link>
         </div>
       )}
     </div>
