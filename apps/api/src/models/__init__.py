@@ -22,6 +22,7 @@ from src.models.verification_token import VerificationToken
 from src.models.webhook_event import WebhookEvent
 from src.models.connection import Connection
 from src.models.forum import ForumCategory, ForumThread, ForumReply
+from src.models.event import Event, EventAttendee
 
 __all__ = [
     "User",
@@ -48,4 +49,6 @@ __all__ = [
     "ForumCategory",
     "ForumThread",
     "ForumReply",
+    "Event",
+    "EventAttendee",
 ]
