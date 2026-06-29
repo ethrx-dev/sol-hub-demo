@@ -57,7 +57,11 @@ export default function PricingPage() {
       });
       window.location.href = url;
     } catch (err: any) {
-      toast.error(err?.message || "Checkout failed. Stripe may not be configured.");
+      if (err?.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      toast.error(err?.message || "Checkout failed.");
     } finally {
       setCheckingOut(null);
     }

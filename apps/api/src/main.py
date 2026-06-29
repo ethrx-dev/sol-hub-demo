@@ -12,6 +12,8 @@ from src.middleware.rate_limit import add_rate_limit_middleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.ENVIRONMENT != "development" and settings.SECRET_KEY in ("dev-secret", "change-this-to-a-random-secret", ""):
+        raise RuntimeError("SECRET_KEY must be set to a strong random value in non-development environments")
     yield
 
 

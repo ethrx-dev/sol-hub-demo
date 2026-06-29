@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, Share2, Send } from "lucide-react";
 import { cn } from "@/src/lib/utils";
@@ -30,6 +30,10 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeedProps) {
   const [localPosts, setLocalPosts] = useState(posts);
+
+  useEffect(() => {
+    setLocalPosts(posts);
+  }, [posts]);
   const [commentOpen, setCommentOpen] = useState<Record<string, boolean>>({});
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});

@@ -38,6 +38,14 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class UserResponse(BaseResponseWithUUID):
     id: str
     email: str

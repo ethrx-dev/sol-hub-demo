@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "SOL Hub <noreply@solhub.com>"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     ENVIRONMENT: str = "development"
 

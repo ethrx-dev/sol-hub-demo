@@ -23,3 +23,4 @@ class Group(Base):
 
     creator = relationship("User", back_populates="groups_created")
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
+    group_messages = relationship("GroupMessage", back_populates="group", cascade="all, delete-orphan")

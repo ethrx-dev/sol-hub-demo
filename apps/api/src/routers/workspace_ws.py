@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
 from sqlalchemy import select
 
@@ -27,6 +29,36 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
     if not user_id:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+
+    try:
+        uid = uuid.UUID(user_id)
+    except (ValueError, TypeError):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    async with get_db() as db:
+        project = await db.execute(
+            select(Project).where(Project.id == project_id, Project.is_deleted == False)
+        )
+        project = project.scalar_one_or_none()
+        if not project:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        if project.innovator_id != uid:
+            match_result = await db.execute(
+                select(Match).where(
+                    Match.project_id == project_id,
+                    Match.status == "accepted",
+                )
+            )
+            authorized = any(
+                m.mentor_id == uid or m.investor_id == uid
+                for m in match_result.scalars().all()
+            )
+            if not authorized:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
 
     await websocket.accept()
 

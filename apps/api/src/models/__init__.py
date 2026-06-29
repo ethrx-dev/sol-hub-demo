@@ -17,6 +17,8 @@ from src.models.document import Document
 from src.models.subscription import Subscription
 from src.models.refresh_token import RefreshToken
 from src.models.password_reset_token import PasswordResetToken
+from src.models.group_message import GroupMessage
+from src.models.verification_token import VerificationToken
 
 __all__ = [
     "User",
@@ -36,4 +38,6 @@ __all__ = [
     "NotificationPreference",
     "Document",
     "Subscription",
+    "GroupMessage",
+    "VerificationToken",
 ]

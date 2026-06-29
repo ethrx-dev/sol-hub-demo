@@ -28,6 +28,7 @@ from src.schemas.admin import (
 )
 from src.schemas.auth import TokenResponse
 from src.schemas.project import ProjectResponse
+from src.schemas.match import MatchResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 from src.utils.security import hash_password, create_access_token, create_refresh_token
 

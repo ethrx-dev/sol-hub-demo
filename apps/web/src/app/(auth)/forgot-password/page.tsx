@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
           <CardDescription>
             {sent
               ? "Check your email for a reset link"
-              : "Enter your email and we'll send you a reset link"}
+              : "Enter your email and we will send you a reset link"}
           </CardDescription>
         </CardHeader>
         <CardContent>

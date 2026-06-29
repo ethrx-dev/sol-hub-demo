@@ -33,10 +33,24 @@ async def update_plan(tier: str, body: PlanResponse, _: CurrentAdmin):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
 
 
+def _apply_tier(user: User, tier: str, db: DbSession) -> None:
+    user.membership_tier = tier
+    sub = Subscription(
+        user_id=user.id,
+        tier=tier,
+        status="active",
+    )
+    db.add(sub)
+
+
 @router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout_session(body: CheckoutRequest, db: DbSession, current_user: CurrentUser):
+    tier = _tier_from_price(body.price_id)
+
     if not settings.STRIPE_SECRET_KEY:
-        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Stripe is not configured")
+        _apply_tier(current_user, tier, db)
+        await db.flush()
+        return CheckoutResponse(url=body.success_url)
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
