@@ -10,6 +10,9 @@ export const metadata = {
 
 export default function TestimonialsPage() {
   const widgetId = process.env.NEXT_PUBLIC_SHAPO_WIDGET_ID;
+  const formUrl = process.env.NEXT_PUBLIC_SHAPO_FORM_ID
+    ? `https://app.shapo.io/forms/${process.env.NEXT_PUBLIC_SHAPO_FORM_ID}`
+    : null;
 
   return (
     <>
@@ -48,6 +51,39 @@ export default function TestimonialsPage() {
           </div>
         </section>
       )}
+
+      <section className="py-20">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold font-heading">Share Your Story</h2>
+          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+            Are you part of the SOL Hub community? We&apos;d love to hear about your experience.
+          </p>
+          <div className="mt-10">
+            <div className="rounded-lg border bg-card p-10">
+              <p className="text-muted-foreground mb-6">
+                Your testimonial helps others discover the impact of SOL Hub. Submit your story and it could be featured on this page.
+              </p>
+              {formUrl ? (
+                <a
+                  href={formUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-sol btn-sol-primary inline-block"
+                >
+                  Write a Testimonial
+                </a>
+              ) : (
+                <a
+                  href="mailto:etherix.dev@proton.me"
+                  className="text-primary underline underline-offset-2 hover:text-primary/80"
+                >
+                  etherix.dev@proton.me
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="relative bg-sage-light/30 py-20 overflow-hidden">
         <div className="absolute -left-10 top-0 opacity-[0.05] pointer-events-none">

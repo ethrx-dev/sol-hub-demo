@@ -28,9 +28,18 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
     ADMIN_SEED_KEY: str = ""
 
+    ENABLED_FEATURES: str = (
+        "connections"
+    )
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+
+    @property
+    def features(self) -> set[str]:
+        return {f.strip() for f in self.ENABLED_FEATURES.split(",") if f.strip()}
 
 
 settings = Settings()

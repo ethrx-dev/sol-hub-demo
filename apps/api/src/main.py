@@ -14,6 +14,8 @@ from src.middleware.rate_limit import add_rate_limit_middleware
 async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT != "development" and settings.SECRET_KEY in ("dev-secret", "change-this-to-a-random-secret", ""):
         raise RuntimeError("SECRET_KEY must be set to a strong random value in non-development environments")
+    if settings.ENVIRONMENT != "development" and (settings.S3_ACCESS_KEY == "minioadmin" or settings.S3_SECRET_KEY == "minioadmin"):
+        raise RuntimeError("S3 credentials must be changed from default values in non-development environments")
     yield
 
 
@@ -56,7 +58,9 @@ async def healthcheck():
     return {"status": "ok", "service": "sol-hub-api"}
 
 
-from src.routers import routers
+from src.routers.feature_registry import get_enabled_routers
+
+routers = get_enabled_routers()
 
 for r in routers:
     app.include_router(r)

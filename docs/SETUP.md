@@ -131,7 +131,8 @@ Set `RESEND_API_KEY` in `apps/api/.env`. Emails fall back to console logging whe
 
 ### Shapo Testimonials
 
-Sign up at Shapo.io, get a widget ID, and set `NEXT_PUBLIC_SHAPO_WIDGET_ID` in `apps/web/.env`.
+1. Sign up at Shapo.io, create a widget (display wall), and set `NEXT_PUBLIC_SHAPO_WIDGET_ID` in `apps/web/.env`
+2. (Optional) Create a form (submission form) in Shapo, and set `NEXT_PUBLIC_SHAPO_FORM_ID` in `apps/web/.env` to enable user testimonial submission directly on the `/testimonials` page
 
 ### Plausible Analytics
 

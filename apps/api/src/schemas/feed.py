@@ -17,11 +17,22 @@ class CommentResponse(BaseResponseWithUUID):
     author_avatar: str | None = None
     content: str
     created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
 
 class CreateCommentRequest(BaseModel):
+    content: str
+
+
+class UpdatePostRequest(BaseModel):
+    content: str | None = None
+    media_urls: list[str] | None = None
+    privacy: str | None = None
+
+
+class UpdateCommentRequest(BaseModel):
     content: str
 
 
