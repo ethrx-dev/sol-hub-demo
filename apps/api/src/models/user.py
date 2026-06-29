@@ -45,3 +45,5 @@ class User(Base):
     notification_preferences = relationship("NotificationPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
     group_messages = relationship("GroupMessage", back_populates="sender", foreign_keys="GroupMessage.sender_id", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    following = relationship("Connection", back_populates="follower", foreign_keys="Connection.follower_id", cascade="all, delete-orphan")
+    followers = relationship("Connection", back_populates="following", foreign_keys="Connection.following_id", cascade="all, delete-orphan")

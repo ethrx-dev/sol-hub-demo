@@ -20,6 +20,7 @@ from src.models.password_reset_token import PasswordResetToken
 from src.models.group_message import GroupMessage
 from src.models.verification_token import VerificationToken
 from src.models.webhook_event import WebhookEvent
+from src.models.connection import Connection
 
 __all__ = [
     "User",
@@ -42,4 +43,5 @@ __all__ = [
     "GroupMessage",
     "VerificationToken",
     "WebhookEvent",
+    "Connection",
 ]

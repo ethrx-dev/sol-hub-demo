@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MessageSquare, Users, Image, Video, Plus } from "lucide-react";
+import { MessageSquare, Users, Image, Video, Plus, UserPlus } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
@@ -29,17 +29,18 @@ export default function HubPage() {
   const fetchPosts = async (append = false) => {
     try {
       const data: any = await api.get(`/feed/?skip=${append ? skip : 0}&limit=${limit}`);
-      const mapped = (data.items || []).map((p: any) => ({
-        id: p.id,
-        authorName: p.author_name,
-        authorAvatar: p.author_avatar,
-        content: p.content,
-        media: p.media_urls,
-        likes: p.like_count,
-        comments: p.comment_count,
-        liked: p.is_liked,
-        createdAt: p.created_at,
-      }));
+        const mapped = (data.items || []).map((p: any) => ({
+          id: p.id,
+          authorName: p.author_name,
+          authorAvatar: p.author_avatar,
+          content: p.content,
+          media: p.media_urls,
+          likes: p.like_count,
+          comments: p.comment_count,
+          liked: p.is_liked,
+          createdAt: p.created_at,
+          privacy: p.privacy,
+        }));
       setPosts(append ? (prev) => [...prev, ...mapped] : mapped);
       setTotal(data.total || 0);
       setSkip(append ? skip + limit : limit);
@@ -155,6 +156,12 @@ export default function HubPage() {
             <Video className="mr-2 h-4 w-4" />
             Videos
           </TabsTrigger>
+          <Link href="/hub/connections">
+            <TabsTrigger value="connections" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Network
+            </TabsTrigger>
+          </Link>
         </TabsList>
 
         <TabsContent value="feed" className="mt-6">
