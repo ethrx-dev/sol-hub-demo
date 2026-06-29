@@ -8,6 +8,7 @@ import { useAuth } from "@/src/lib/auth";
 import { useNotificationStore } from "@/src/stores/notification-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { NotificationDropdown } from "@/src/components/shared/notification-dropdown";
+import { GlobalSearch } from "@/src/components/shared/global-search";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +54,7 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          <GlobalSearch />
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -152,6 +154,9 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <div className="px-3 py-2">
+              <GlobalSearch />
+            </div>
             <hr className="my-2 border-border" />
             {isAuthenticated ? (
               <>
