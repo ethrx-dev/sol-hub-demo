@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -15,6 +16,9 @@ import {
 import { useAuth } from "@/src/lib/auth";
 import { api } from "@/src/lib/api-client";
 import { toast } from "sonner";
+import VideoRecorder from "@/src/components/shared/VideoRecorder";
+import { useTourStore } from "@/src/stores/tour-store";
+import { Compass } from "lucide-react";
 
 const SECTORS = [
   "CleanTech", "HealthTech", "FinTech", "EdTech",
@@ -22,7 +26,6 @@ const SECTORS = [
 ];
 
 const STAGES = ["Idea", "Prototype", "Early Traction", "Growth", "Scale"];
-
 const MENTORSHIP_STYLES = ["One-on-One", "Group", "Asynchronous", "Mixed"];
 const INVOLVEMENT_LEVELS = ["Passive", "Advisory", "Active", "Lead"];
 
@@ -31,8 +34,26 @@ const INVESTMENT_RANGES = [
   "$100k - $500k", "$500k+",
 ];
 
+const PILLAR_LABELS: Record<string, string> = {
+  innovator: "Innovator",
+  mentor: "Mentor",
+  investor: "Conscious Investor",
+};
+
+const PILLAR_MAP: Record<string, "innovators" | "mentors" | "investors"> = {
+  innovator: "innovators",
+  mentor: "mentors",
+  investor: "investors",
+};
+
+const WELCOME_STEPS = [
+  { title: "Explore the Hub", desc: "Connect with innovators, mentors, and investors in the community feed, groups, and forums." },
+  { title: "Find Your Match", desc: "Get paired with the right people based on your goals and expertise." },
+  { title: "Build & Grow", desc: "Access workspaces, track milestones, and bring your vision to life." },
+];
+
 export function OnboardingFlow() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<Record<string, string>>({});
@@ -41,7 +62,7 @@ export function OnboardingFlow() {
   const update = (field: string, value: string) =>
     setData((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = async () => {
+  const handleComplete = async () => {
     setSubmitting(true);
     try {
       await api.patch("/users/me", {
@@ -50,7 +71,8 @@ export function OnboardingFlow() {
         sectors_of_interest: data.sector ? [data.sector] : undefined,
         bio: data.bio || undefined,
       });
-      toast.success("Profile completed!");
+      await refreshUser();
+      toast.success("Welcome to SOL!");
       const dashboards: Record<string, string> = {
         innovator: "/innovator/projects",
         mentor: "/mentor/browse",
@@ -59,7 +81,7 @@ export function OnboardingFlow() {
       };
       router.push(dashboards[user?.role || ""] || "/");
     } catch {
-      toast.error("Failed to save profile. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -69,207 +91,233 @@ export function OnboardingFlow() {
 
   const role = user.role;
 
-  const renderRoleStep = () => {
-    switch (role) {
-      case "innovator":
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Innovator Profile</h2>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Primary Sector</label>
-              <Select value={data.sector || ""} onValueChange={(v) => update("sector", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Current Stage</label>
-              <Select value={data.stage || ""} onValueChange={(v) => update("stage", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Skills (comma separated)</label>
-              <Input
-                value={data.skills || ""}
-                onChange={(e) => update("skills", e.target.value)}
-                placeholder="e.g., Product Management, UX Design, Python"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Business Plan Status</label>
-              <Select
-                value={data.businessPlan || ""}
-                onValueChange={(v) => update("businessPlan", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Business Plan</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      case "mentor":
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Mentor Profile</h2>
-            <Input
-              label="Years of Experience"
-              type="number"
-              value={data.yearsExperience || ""}
-              onChange={(e) => update("yearsExperience", e.target.value)}
-              placeholder="e.g., 10"
-            />
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Mentorship Style</label>
-              <Select
-                value={data.mentorshipStyle || ""}
-                onValueChange={(v) => update("mentorshipStyle", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select style" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MENTORSHIP_STYLES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Availability</label>
-              <Select
-                value={data.availability || ""}
-                onValueChange={(v) => update("availability", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select availability" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1-2">1-2 hours/month</SelectItem>
-                  <SelectItem value="3-5">3-5 hours/month</SelectItem>
-                  <SelectItem value="5-10">5-10 hours/month</SelectItem>
-                  <SelectItem value="10+">10+ hours/month</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Input
-              label="Expertise Areas (comma separated)"
-              value={data.expertise || ""}
-              onChange={(e) => update("expertise", e.target.value)}
-              placeholder="e.g., Fundraising, Product Strategy, Marketing"
-            />
-          </div>
-        );
-
-      case "investor":
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Investor Profile</h2>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Investment Range</label>
-              <Select
-                value={data.investmentRange || ""}
-                onValueChange={(v) => update("investmentRange", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select range" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INVESTMENT_RANGES.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Impact Focus</label>
-              <Select
-                value={data.impactFocus || ""}
-                onValueChange={(v) => update("impactFocus", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select focus" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Involvement Level</label>
-              <Select
-                value={data.involvement || ""}
-                onValueChange={(v) => update("involvement", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INVOLVEMENT_LEVELS.map((l) => (
-                    <SelectItem key={l} value={l}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  const totalSteps = 5;
 
   return (
     <div className="mx-auto max-w-lg">
+      {/* Progress */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+          <span>Step {step} of {totalSteps}</span>
+          <span>{["Welcome", "Your Role", "Record Video", "Profile", "All Set"][step - 1]}</span>
+        </div>
+        <div className="flex gap-1">
+          {Array.from({ length: totalSteps }, (_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i < step ? "bg-primary" : "bg-primary/20"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
       <Card>
         <CardContent className="p-6">
-          {step === 1 && renderRoleStep()}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Video Introduction</h2>
-              <p className="text-sm text-muted-foreground">
-                Record or upload a short video introducing yourself and your interest in SOL Hub.
-              </p>
-              <div className="rounded-lg border-2 border-dashed p-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Drag & drop or click to upload
-                </p>
-                <Button variant="outline" className="mt-2" type="button">
-                  Upload Video
-                </Button>
+          {/* Step 1: Welcome */}
+          {step === 1 && (
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center mb-2">
+                <img src="/sol-icon.svg" alt="SOL" className="h-14 w-14" />
               </div>
-              <Input
-                label="Or paste a video URL"
-                value={data.videoUrl || ""}
-                onChange={(e) => update("videoUrl", e.target.value)}
-                placeholder="https://youtube.com/watch?v=..."
-              />
+              <h2 className="text-2xl font-bold font-heading">Welcome to SOL!</h2>
+              <p className="text-sm text-muted-foreground">
+                You&apos;re now a Private Member of Spaces of Learning. Here&apos;s what you can do:
+              </p>
+              <div className="space-y-3 text-left mt-4">
+                {WELCOME_STEPS.map((s, i) => (
+                  <div key={s.title} className="flex items-start gap-3 rounded-lg border bg-sage-light/20 p-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">{s.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
+          {/* Step 2: Your Role */}
+          {step === 2 && (
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center mb-2">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <span className="text-2xl font-bold text-primary font-heading">
+                    {role === "innovator" ? "I" : role === "mentor" ? "M" : "CI"}
+                  </span>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold font-heading">You Joined as a {PILLAR_LABELS[role]}</h2>
+              <p className="text-sm text-muted-foreground">
+                {role === "innovator"
+                  ? "You'll submit ideas, get matched with mentors and investors, and track your project milestones."
+                  : role === "mentor"
+                  ? "You'll browse projects, share your expertise, and guide the next generation of entrepreneurs."
+                  : "You'll discover vetted projects, invest consciously, and track your portfolio."}
+              </p>
+            </div>
+          )}
+
+          {/* Step 3: Record Video */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">Introduce Yourself</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Record a 90-second video answering 3 questions about your journey.
+                </p>
+              </div>
+              <VideoRecorder pillar={PILLAR_MAP[role] || "innovators"} />
+            </div>
+          )}
+
+          {/* Step 4: Profile */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">Complete Your Profile</h2>
+                <p className="text-sm text-muted-foreground">
+                  Help others find and connect with you.
+                </p>
+              </div>
+              {role === "innovator" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Primary Sector</label>
+                    <Select value={data.sector || ""} onValueChange={(v) => update("sector", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
+                      <SelectContent>
+                        {SECTORS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Current Stage</label>
+                    <Select value={data.stage || ""} onValueChange={(v) => update("stage", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
+                      <SelectContent>
+                        {STAGES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Input label="Skills (comma separated)" value={data.skills || ""} onChange={(e) => update("skills", e.target.value)} placeholder="e.g., Product Management, UX Design, Python" />
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Business Plan</label>
+                    <Select value={data.businessPlan || ""} onValueChange={(v) => update("businessPlan", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Business Plan</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+              {role === "mentor" && (
+                <>
+                  <Input label="Years of Experience" type="number" value={data.yearsExperience || ""} onChange={(e) => update("yearsExperience", e.target.value)} placeholder="e.g., 10" />
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Mentorship Style</label>
+                    <Select value={data.mentorshipStyle || ""} onValueChange={(v) => update("mentorshipStyle", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select style" /></SelectTrigger>
+                      <SelectContent>
+                        {MENTORSHIP_STYLES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Input label="Expertise (comma separated)" value={data.expertise || ""} onChange={(e) => update("expertise", e.target.value)} placeholder="e.g., Fundraising, Product Strategy" />
+                </>
+              )}
+              {role === "investor" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Investment Range</label>
+                    <Select value={data.investmentRange || ""} onValueChange={(v) => update("investmentRange", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select range" /></SelectTrigger>
+                      <SelectContent>
+                        {INVESTMENT_RANGES.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Impact Focus</label>
+                    <Select value={data.impactFocus || ""} onValueChange={(v) => update("impactFocus", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select focus" /></SelectTrigger>
+                      <SelectContent>
+                        {SECTORS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Involvement Level</label>
+                    <Select value={data.involvement || ""} onValueChange={(v) => update("involvement", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+                      <SelectContent>
+                        {INVOLVEMENT_LEVELS.map((l) => (<SelectItem key={l} value={l}>{l}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 5: All Set */}
+          {step === 5 && (
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center mb-2">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <span className="text-3xl font-bold text-primary">&#10003;</span>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold font-heading">You&apos;re All Set!</h2>
+              <p className="text-sm text-muted-foreground">
+                Welcome to the SOL community. Here are some places to start:
+              </p>
+              <div className="space-y-2 text-left mt-4">
+                <Link href="/hub" className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">H</span>
+                  <div>
+                    <p className="text-sm font-medium">Explore the Hub</p>
+                    <p className="text-xs text-muted-foreground">Feeds, groups, forums, events, and more</p>
+                  </div>
+                </Link>
+                <Link href={role === "innovator" ? "/innovator/projects" : role === "mentor" ? "/mentor/browse" : "/investor/browse"} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">D</span>
+                  <div>
+                    <p className="text-sm font-medium">Visit Your Dashboard</p>
+                    <p className="text-xs text-muted-foreground">Manage projects, matches, and settings</p>
+                  </div>
+                </Link>
+                <Link href="/resources" className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">R</span>
+                  <div>
+                    <p className="text-sm font-medium">Browse Resources</p>
+                    <p className="text-xs text-muted-foreground">Templates, guides, and learning materials</p>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => useTourStore.getState().open()}
+                  className="flex w-full items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors text-left"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    <Compass className="h-4 w-4 text-primary" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium">Take a Product Tour</p>
+                    <p className="text-xs text-muted-foreground">Explore all features with a guided walkthrough</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
           <div className="mt-6 flex items-center justify-between">
             <Button
               variant="outline"
@@ -278,11 +326,13 @@ export function OnboardingFlow() {
             >
               Back
             </Button>
-            {step < 2 ? (
-              <Button onClick={() => setStep(2)}>Next</Button>
+            {step < totalSteps ? (
+              <Button onClick={() => setStep((s) => s + 1)}>
+                Continue
+              </Button>
             ) : (
-              <Button onClick={handleSubmit} loading={submitting}>
-                Complete Setup
+              <Button onClick={handleComplete} loading={submitting}>
+                Go to Dashboard
               </Button>
             )}
           </div>

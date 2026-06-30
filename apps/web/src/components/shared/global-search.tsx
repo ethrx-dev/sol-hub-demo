@@ -22,7 +22,7 @@ export function GlobalSearch() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const grouped = results.reduce<Record<string, any[]>>((acc, r) => {
     (acc[r.type] = acc[r.type] || []).push(r);

@@ -34,6 +34,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -41,6 +42,8 @@ interface RegisterData {
   password: string;
   fullName: string;
   role: UserRole;
+  membershipAgreed?: boolean;
+  emailAlerts?: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,6 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: registerData.email,
         password: registerData.password,
         full_name: registerData.fullName,
+        role: registerData.role,
+        membership_agreed: registerData.membershipAgreed ?? true,
+        email_alerts: registerData.emailAlerts ?? false,
       }
     );
     const user = await setAuth(data.access_token);
@@ -126,6 +132,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push("/onboarding");
     }
   };
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const data = await api.get<User>("/auth/me");
+      setUser(data);
+    } catch {
+      setUser(null);
+    }
+  }, []);
 
   const logout = async () => {
     try {
@@ -147,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

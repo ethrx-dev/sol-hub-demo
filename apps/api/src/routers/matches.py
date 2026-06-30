@@ -92,20 +92,29 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
     mentor_id = uuid.UUID(body.mentor_id) if body.mentor_id else None
     investor_id = uuid.UUID(body.investor_id) if body.investor_id else None
 
-    if current_user.role == "innovator":
+    if current_user.role == "admin":
+        pass  # admins can create any match
+    elif current_user.role == "innovator":
         if mentor_id != current_user.id and investor_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Innovators can only express interest for themselves")
-        existing = await db.execute(
-            select(Match).where(
-                Match.project_id == project.id,
-                or_(
-                    Match.mentor_id == mentor_id,
-                    Match.investor_id == investor_id,
-                ),
-            )
+    elif current_user.role == "mentor":
+        if mentor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentors can only create matches for themselves as mentor")
+    elif current_user.role == "investor":
+        if investor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Investors can only create matches for themselves as investor")
+
+    existing = await db.execute(
+        select(Match).where(
+            Match.project_id == project.id,
+            or_(
+                Match.mentor_id == mentor_id,
+                Match.investor_id == investor_id,
+            ),
         )
-        if existing.scalar_one_or_none():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Match already exists")
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Match already exists")
 
     match = Match(
         project_id=project.id,

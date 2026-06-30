@@ -1,12 +1,52 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/src/components/layout/sidebar";
 import { Navbar } from "@/src/components/layout/navbar";
 import { Menu } from "lucide-react";
+import { useAuth, type UserRole } from "@/src/lib/auth";
+
+const ROLE_PREFIXES: Record<UserRole, string[]> = {
+  innovator: ["/innovator"],
+  mentor: ["/mentor"],
+  investor: ["/investor"],
+  admin: ["/admin"],
+};
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && user && !user.onboarding_completed) {
+      router.push("/onboarding");
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    const allowedPrefixes = ROLE_PREFIXES[user.role] || [];
+    const isOnRolePage = allowedPrefixes.some((p) => pathname.startsWith(p));
+    const isOnSharedPage =
+      pathname.startsWith("/workspaces") ||
+      pathname.startsWith("/notifications") ||
+      pathname.startsWith("/hub") ||
+      pathname.startsWith("/resources");
+
+    if (!isOnRolePage && !isOnSharedPage && pathname.startsWith("/")) {
+      const dashPaths: Record<string, string> = {
+        innovator: "/innovator",
+        mentor: "/mentor",
+        investor: "/investor",
+        admin: "/admin",
+      };
+      router.push(dashPaths[user.role] || "/");
+    }
+  }, [user, isLoading, pathname, router]);
 
   return (
     <div className="min-h-screen">
