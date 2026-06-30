@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
-    value: "default-src 'self'; script-src 'self' https://plausible.io https://cdn.shapo.io 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; connect-src 'self' ws: wss: https: http://localhost:*; frame-src https://cdn.shapo.io; font-src 'self' data:",
+    value: "default-src 'self'; script-src 'self' https://plausible.io 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob: http://localhost:9000; media-src 'self' data: https: blob: http://localhost:9000; connect-src 'self' ws: wss: https: http://localhost:*; font-src 'self' data:",
   },
   {
     key: "Strict-Transport-Security",
@@ -23,7 +23,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(self), microphone=(self), geolocation=()",
   },
 ];
 

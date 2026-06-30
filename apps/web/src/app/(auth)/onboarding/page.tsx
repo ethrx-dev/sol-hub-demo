@@ -16,9 +16,9 @@ export default function OnboardingPage() {
           <div className="flex justify-center mb-4">
             <img src="/sol-icon.svg" alt="SOL" className="h-12 w-12" />
           </div>
-          <h1 className="text-4xl font-bold font-heading">Complete Your Profile</h1>
+          <h1 className="text-4xl font-bold font-heading">Welcome to SOL</h1>
           <p className="mt-2 text-muted-foreground">
-            Tell us more about yourself so we can tailor your experience.
+            Let&apos;s get you set up in a few steps.
           </p>
         </div>
         <OnboardingFlow />

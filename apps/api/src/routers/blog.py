@@ -102,6 +102,8 @@ async def list_posts(
 
 @router.post("/posts", response_model=BlogPostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("admin", "mentor"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and mentors can create blog posts")
     base_slug = slugify(body.title)
     slug = base_slug
     counter = 1

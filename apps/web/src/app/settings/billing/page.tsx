@@ -107,8 +107,8 @@ export default function BillingPage() {
               </Button>
             )}
             {!isPaid && (
-              <Link href="/pricing">
-                <Button variant="outline">View Plans</Button>
+              <Link href="/become-a-member">
+                <Button variant="outline">Become a Member</Button>
               </Link>
             )}
           </CardContent>

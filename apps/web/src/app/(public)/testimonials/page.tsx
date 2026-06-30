@@ -1,19 +1,10 @@
-import { ShapoWidget } from "@/src/components/shared/ShapoWidget";
-
 export const metadata = {
   title: "Testimonials | SOL Hub",
   description:
     "Hear what our community of innovators, mentors, and investors say about SOL Hub.",
 };
 
-
-
 export default function TestimonialsPage() {
-  const widgetId = process.env.NEXT_PUBLIC_SHAPO_WIDGET_ID;
-  const formUrl = process.env.NEXT_PUBLIC_SHAPO_FORM_ID
-    ? `https://app.shapo.io/forms/${process.env.NEXT_PUBLIC_SHAPO_FORM_ID}`
-    : null;
-
   return (
     <>
       <section className="relative overflow-hidden bg-gradient-to-br from-sage-light/30 via-background to-sage-light/20 py-24">
@@ -33,24 +24,16 @@ export default function TestimonialsPage() {
         </div>
       </section>
 
-      {widgetId ? (
-        <section className="py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <ShapoWidget widgetId={widgetId} className="mx-auto" />
+      <section className="py-20">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <div className="rounded-lg border bg-card p-12">
+            <h2 className="text-2xl font-semibold">Testimonials Coming Soon</h2>
+            <p className="mt-3 text-muted-foreground">
+              We&apos;re collecting stories from our community. Check back soon to hear from innovators, mentors, and investors building the future on SOL Hub.
+            </p>
           </div>
-        </section>
-      ) : (
-        <section className="py-20">
-          <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-            <div className="rounded-lg border bg-card p-12">
-              <h2 className="text-2xl font-semibold">Testimonials Coming Soon</h2>
-              <p className="mt-3 text-muted-foreground">
-                We&apos;re collecting stories from our community. Check back soon to hear from innovators, mentors, and investors building the future on SOL Hub.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       <section className="py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -63,30 +46,19 @@ export default function TestimonialsPage() {
               <p className="text-muted-foreground mb-6">
                 Your testimonial helps others discover the impact of SOL Hub. Submit your story and it could be featured on this page.
               </p>
-              {formUrl ? (
-                <a
-                  href={formUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-sol btn-sol-primary inline-block"
-                >
-                  Write a Testimonial
-                </a>
-              ) : (
-                <a
-                  href="mailto:etherix.dev@proton.me"
-                  className="text-primary underline underline-offset-2 hover:text-primary/80"
-                >
-                  etherix.dev@proton.me
-                </a>
-              )}
+              <a
+                href="mailto:etherix.dev@proton.me"
+                className="text-primary underline underline-offset-2 hover:text-primary/80"
+              >
+                etherix.dev@proton.me
+              </a>
             </div>
           </div>
         </div>
       </section>
 
       <section className="relative bg-sage-light/30 py-20 overflow-hidden">
-        <div className="absolute -left-10 top-0 opacity-[0.05] pointer-events-none">
+        <div className="absolute left-0 top-0 opacity-[0.05] pointer-events-none">
           <img src="/sol-icon.svg" alt="" className="w-[180px] sm:w-[250px]" />
         </div>
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8 relative">

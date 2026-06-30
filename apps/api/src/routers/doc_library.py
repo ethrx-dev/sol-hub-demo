@@ -119,6 +119,8 @@ async def create_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in ("admin", "mentor"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and mentors can add documents")
     doc = DocLibraryItem(
         title=body.title, description=body.description,
         file_url=body.file_url, file_type=body.file_type, file_size=body.file_size,

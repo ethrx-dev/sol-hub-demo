@@ -23,6 +23,8 @@ class User(Base):
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     membership_tier: Mapped[str] = mapped_column(String(50), default="free")
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    membership_agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    email_alerts: Mapped[bool] = mapped_column(Boolean, default=False)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_super_admin: Mapped[bool] = mapped_column(Boolean, default=False)

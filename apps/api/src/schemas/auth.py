@@ -7,6 +7,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=255)
+    role: str = Field(default="innovator", pattern="^(innovator|mentor|investor)$")
+    membership_agreed: bool = True
+    email_alerts: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -56,6 +59,8 @@ class UserResponse(BaseResponseWithUUID):
     bio: str | None = None
     skills: list = []
     sectors_of_interest: list = []
+    membership_agreed_at: datetime | None = None
+    email_alerts: bool = False
     onboarding_completed: bool = False
     membership_tier: str = "free"
     is_active: bool = True

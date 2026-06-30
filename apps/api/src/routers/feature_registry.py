@@ -18,6 +18,7 @@ from src.routers.workspace_ws import router as workspace_ws_router
 from src.routers.notification_preferences import router as notification_preferences_router
 from src.routers.search import router as search_router
 from src.routers.activity import router as activity_router
+from src.routers.pillars import router as pillars_router
 
 FeatureRouter = tuple[str, APIRouter]
 
@@ -40,6 +41,7 @@ CORE_ROUTERS: list[FeatureRouter] = [
     ("core", notification_preferences_router),
     ("core", search_router),
     ("core", activity_router),
+    ("core", pillars_router),
 ]
 
 FEATURE_ROUTERS: dict[str, APIRouter] = {}

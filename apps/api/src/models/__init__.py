@@ -28,6 +28,7 @@ from src.models.doc_library import DocCategory, DocLibraryItem
 from src.models.blog import BlogCategory, BlogPost
 from src.models.activity import ActivityLog
 from src.models.moderation import Report, Block
+from src.models.pillar_submission import PillarSubmission
 
 __all__ = [
     "User",
@@ -65,4 +66,5 @@ __all__ = [
     "ActivityLog",
     "Report",
     "Block",
+    "PillarSubmission",
 ]

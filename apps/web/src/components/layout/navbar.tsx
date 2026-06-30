@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Bell, LogOut, Settings, User } from "lucide-react";
+import { Menu, X, Bell, LogOut, Settings, User, Compass, AlertCircle } from "lucide-react";
 import { useAuth } from "@/src/lib/auth";
 import { useNotificationStore } from "@/src/stores/notification-store";
+import { useTourStore } from "@/src/stores/tour-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { NotificationDropdown } from "@/src/components/shared/notification-dropdown";
 import { GlobalSearch } from "@/src/components/shared/global-search";
@@ -20,10 +21,19 @@ import {
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "What We Do" },
+  {
+    href: "/what-we-do",
+    label: "What We Do",
+    children: [
+      { href: "/innovators", label: "Innovators" },
+      { href: "/mentors", label: "Mentors" },
+      { href: "/investors", label: "Conscious Investors" },
+    ],
+  },
+  { href: "/become-a-member", label: "Become a Member" },
   { href: "/about", label: "About" },
-  { href: "/testimonials", label: "Testimonials" },
-  { href: "/hub", label: "Blog" },
+
+  { href: "/hub", label: "Hub" },
   { href: "/resources", label: "Resources" },
 ];
 
@@ -41,20 +51,52 @@ export function Navbar() {
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={`text-sm font-medium transition-colors duration-300 hover:text-primary ${
-                pathname === link.href
-                  ? "text-primary"
-                  : "text-foreground"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) =>
+            "children" in link && link.children ? (
+              <DropdownMenu key={link.label}>
+                <DropdownMenuTrigger asChild>
+                  <button className={`inline-flex items-center gap-1 text-sm font-medium transition-colors duration-300 hover:text-primary ${
+                    pathname.startsWith(link.href)
+                      ? "text-primary"
+                      : "text-foreground"
+                  }`}>
+                    {link.label}
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {link.children.map((child) => (
+                    <DropdownMenuItem key={child.href} asChild>
+                      <Link href={child.href} className="cursor-pointer">
+                        {child.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`text-sm font-medium transition-colors duration-300 hover:text-primary ${
+                  pathname === link.href
+                    ? "text-primary"
+                    : "text-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
+          )}
           <GlobalSearch />
+          <button
+            onClick={() => useTourStore.getState().open()}
+            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            title="Take a tour of SOL Hub"
+          >
+            <Compass className="h-4 w-4" />
+            <span className="hidden lg:inline">Tour</span>
+          </button>
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -73,6 +115,12 @@ export function Navbar() {
                           .join("") || "U"}
                       </AvatarFallback>
                     </Avatar>
+                    {user && !user.onboarding_completed && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-destructive" />
+                      </span>
+                    )}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -84,7 +132,20 @@ export function Navbar() {
                       </span>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                  {user && !user.onboarding_completed && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/onboarding"
+                          className="cursor-pointer bg-amber-50 focus:bg-amber-100"
+                        >
+                          <AlertCircle className="mr-2 h-4 w-4 text-amber-600" />
+                          <span className="font-medium text-amber-800">Complete Onboarding</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
@@ -157,6 +218,16 @@ export function Navbar() {
             <div className="px-3 py-2">
               <GlobalSearch />
             </div>
+            <button
+              onClick={() => {
+                useTourStore.getState().open();
+                setMobileOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary"
+            >
+              <Compass className="h-4 w-4" />
+              Take a Tour
+            </button>
             <hr className="my-2 border-border" />
             {isAuthenticated ? (
               <>

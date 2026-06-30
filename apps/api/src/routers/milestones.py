@@ -70,6 +70,8 @@ async def list_milestones(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
+    if not await _can_manage_milestones(db, project_id, current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view milestones for this project")
     await _get_project_or_404(db, project_id)
     total = await db.scalar(
         select(func.count(Milestone.id)).where(Milestone.project_id == project_id)

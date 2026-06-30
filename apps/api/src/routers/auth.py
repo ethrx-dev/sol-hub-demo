@@ -33,6 +33,9 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(request: Request, body: RegisterRequest, db: DbSession):
+    if not body.membership_agreed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You must agree to the Membership Agreement")
+
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -41,6 +44,9 @@ async def register(request: Request, body: RegisterRequest, db: DbSession):
         email=body.email,
         password_hash=hash_password(body.password),
         full_name=body.full_name,
+        role=body.role,
+        membership_agreed_at=datetime.now(timezone.utc),
+        email_alerts=body.email_alerts,
     )
     db.add(user)
     await db.flush()
