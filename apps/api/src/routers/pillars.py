@@ -94,7 +94,9 @@ async def submit_video(
             detail="Only video files are accepted",
         )
 
-    mime = video.content_type
+    mime = video.content_type or "video/webm"
+    if mime.startswith("video/webm"):
+        mime = "video/webm"
     data = await video.read()
 
     if len(data) < 1:
