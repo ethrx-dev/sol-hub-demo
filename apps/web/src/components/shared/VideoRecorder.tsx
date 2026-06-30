@@ -102,8 +102,8 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
     setElapsed(0);
 
     const mimeTypes = [
-      "video/webm;codecs=vp9,opus",
       "video/webm;codecs=vp8,opus",
+      "video/webm;codecs=vp9,opus",
       "video/webm;codecs=h264,opus",
       "video/webm",
     ];
@@ -123,6 +123,11 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
 
+    recorder.onerror = () => {
+      setError("Recording failed due to a browser error. Please try again.");
+      if (recorder.state === "recording") recorder.stop();
+    };
+
     recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: mimeType || "video/webm" });
       setRecordedBlob(blob);
@@ -138,7 +143,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       }
     };
 
-    recorder.start(1000);
+    recorder.start();
     setState("recording");
 
     let seconds = 0;
