@@ -27,7 +27,7 @@ def _render_template(body: str) -> str:
 
 
 async def send_email(to: str, subject: str, body: str) -> None:
-    if not settings.RESEND_API_KEY or settings.ENVIRONMENT == "development":
+    if not settings.RESEND_API_KEY:
         logger.info(f"[DEV EMAIL] To: {to}, Subject: {subject}, Body: {body[:200]}...")
         return
 
