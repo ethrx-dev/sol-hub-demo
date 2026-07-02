@@ -1,5 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
+import { DynamicPage } from "@/src/components/admin/section-renderers";
+
+interface CMSPage {
+  sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+}
 
 const PILLARS = [
   {
@@ -92,6 +100,23 @@ const HUB_FEATURES = [
 ];
 
 export default function WhatWeDoPage() {
+  const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
+
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    fetch(`${apiBase}/pages/what-we-do`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => setCmsPage(data))
+      .catch(() => setCmsPage(null));
+  }, []);
+
+  if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
+    return <DynamicPage sections={cmsPage.sections} />;
+  }
+
   return (
     <div className="relative overflow-hidden">
       {/* ============ HERO ============ */}

@@ -17,6 +17,8 @@ import {
   ChevronRight,
   X,
   Bell,
+  FileText,
+  Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { useAuth, type UserRole } from "@/src/lib/auth";
@@ -62,6 +64,8 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/admin/users", label: "Users", icon: <UserCog className="h-4 w-4" /> },
     { href: "/admin/projects", label: "Projects", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/admin/matches", label: "Matches", icon: <Handshake className="h-4 w-4" /> },
+    { href: "/admin/pages", label: "Pages", icon: <FileText className="h-4 w-4" /> },
+    { href: "/admin/media", label: "Media", icon: <ImageIcon className="h-4 w-4" /> },
     { href: "/admin/pillar-submissions", label: "Pillar Submissions", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/admin/groups", label: "Groups", icon: <Users className="h-4 w-4" /> },
     { href: "/admin/posts", label: "Posts", icon: <BookOpen className="h-4 w-4" /> },

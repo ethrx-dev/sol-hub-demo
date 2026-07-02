@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     ENVIRONMENT: str = "development"
 
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://192.168.2.181:3000"]
 
     SENTRY_DSN: str | None = None
     ADMIN_SEED_KEY: str = ""

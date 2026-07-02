@@ -25,16 +25,17 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+app.router.redirect_slashes = False
 
+app.add_middleware(SecurityHeadersMiddleware)
+add_rate_limit_middleware(app)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"] if settings.ENVIRONMENT == "development" else settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Admin-Secret"],
 )
-app.add_middleware(SecurityHeadersMiddleware)
-add_rate_limit_middleware(app)
 
 
 @app.exception_handler(Exception)

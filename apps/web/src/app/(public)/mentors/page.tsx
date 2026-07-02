@@ -1,10 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/src/lib/auth";
+import { DynamicPage } from "@/src/components/admin/section-renderers";
+
+interface CMSPage {
+  sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+}
 
 export default function MentorsPage() {
   const { isAuthenticated } = useAuth();
+  const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
+
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    fetch(`${apiBase}/pages/mentors`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => setCmsPage(data))
+      .catch(() => setCmsPage(null));
+  }, []);
+
+  if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
+    return <DynamicPage sections={cmsPage.sections} />;
+  }
+
   return (
     <div className="relative overflow-hidden">
       {/* Hero */}

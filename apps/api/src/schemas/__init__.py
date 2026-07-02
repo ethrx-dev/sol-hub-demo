@@ -12,4 +12,5 @@ from src.schemas.resource import *
 from src.schemas.membership import *
 from src.schemas.admin import *
 from src.schemas.media import *
+from src.schemas.page import *
 from src.schemas.common import *

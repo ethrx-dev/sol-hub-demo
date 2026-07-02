@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { useState, useEffect } from "react";
 import { useTourStore } from "@/src/stores/tour-store";
 import { Compass } from "lucide-react";
+import { DynamicPage } from "@/src/components/admin/section-renderers";
 
 const FEATURES = [
   {
@@ -54,7 +55,12 @@ const STEPS = [
   },
 ];
 
+interface CMSPage {
+  sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+}
+
 export default function LandingPage() {
+  const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
   const [activeSlide, setActiveSlide] = useState(0);
   const slides = [
     "/sol-slide-meeting.jpg",
@@ -70,6 +76,74 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [slides.length]);
 
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    fetch(`${apiBase}/pages/home`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => setCmsPage(data))
+      .catch(() => setCmsPage(null));
+  }, []);
+
+  // If CMS page exists and has content, render dynamically
+  if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
+    return (
+      <>
+        {/* Hero with slideshow */}
+        <section className="relative overflow-hidden">
+          {slides.map((src, idx) => (
+            <div
+              key={src}
+              className="absolute inset-0 transition-opacity duration-1000"
+              style={{ opacity: idx === activeSlide ? 1 : 0 }}
+            >
+              <div
+                className="h-full w-full bg-cover bg-center scale-110 transition-transform duration-[8000ms]"
+                style={{
+                  backgroundImage: `url(${src})`,
+                  transform: idx === activeSlide ? "scale(1)" : "scale(1.15)",
+                }}
+              />
+            </div>
+          ))}
+          <div className="absolute inset-0 bg-gradient-to-br from-sage-light/70 via-background/80 to-sage-light/60" />
+          <div className="absolute -top-10 -right-10 opacity-[0.07] pointer-events-none">
+            <img src="/sol-icon-color.svg" alt="" className="w-[200px] sm:w-[300px] lg:w-[400px]" />
+          </div>
+          <div className="absolute -bottom-10 left-0 opacity-[0.04] pointer-events-none rotate-12">
+            <img src="/sol-asset-3.svg" alt="" className="w-[180px]" />
+          </div>
+          <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="mb-8 flex justify-center">
+                <img src="/sol-icon-color.svg" alt="SOL" className="h-16 w-16 sm:h-20 sm:w-20" />
+              </div>
+              <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
+                <Link href="/register" className="btn-sol btn-sol-primary uppercase text-sm">
+                  Join SOL Today
+                </Link>
+                <button
+                  onClick={() => useTourStore.getState().open()}
+                  className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white cursor-pointer"
+                >
+                  <Compass className="mr-2 h-4 w-4" />
+                  Take the Tour
+                </button>
+                <Link href="/about" className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white">
+                  Learn More
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+        <DynamicPage sections={cmsPage.sections} />
+      </>
+    );
+  }
+
+  // Fallback: render hardcoded content (when no CMS page or still loading)
   return (
     <>
       {/* Hero */}
