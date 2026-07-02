@@ -1,6 +1,31 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/src/components/ui/card";
+import { DynamicPage } from "@/src/components/admin/section-renderers";
+
+interface CMSPage {
+  sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+}
 
 export default function AboutPage() {
+  const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
+
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    fetch(`${apiBase}/pages/about`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => setCmsPage(data))
+      .catch(() => setCmsPage(null));
+  }, []);
+
+  if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
+    return <DynamicPage sections={cmsPage.sections} />;
+  }
+
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="absolute -top-20 -right-20 opacity-[0.04] pointer-events-none">

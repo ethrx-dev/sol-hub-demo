@@ -58,3 +58,4 @@ class User(Base):
     blog_posts = relationship("BlogPost", back_populates="author", cascade="all, delete-orphan")
     activities = relationship("ActivityLog", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="reporter", cascade="all, delete-orphan")
+    pages = relationship("Page", back_populates="author", cascade="all, delete-orphan")

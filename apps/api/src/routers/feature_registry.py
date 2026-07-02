@@ -19,6 +19,9 @@ from src.routers.notification_preferences import router as notification_preferen
 from src.routers.search import router as search_router
 from src.routers.activity import router as activity_router
 from src.routers.pillars import router as pillars_router
+from src.routers.admin_pages import router as admin_pages_router
+from src.routers.admin_media import router as admin_media_router
+from src.routers.pages import router as pages_router
 
 FeatureRouter = tuple[str, APIRouter]
 
@@ -42,6 +45,9 @@ CORE_ROUTERS: list[FeatureRouter] = [
     ("core", search_router),
     ("core", activity_router),
     ("core", pillars_router),
+    ("core", admin_pages_router),
+    ("core", admin_media_router),
+    ("core", pages_router),
 ]
 
 FEATURE_ROUTERS: dict[str, APIRouter] = {}

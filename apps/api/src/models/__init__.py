@@ -29,6 +29,7 @@ from src.models.blog import BlogCategory, BlogPost
 from src.models.activity import ActivityLog
 from src.models.moderation import Report, Block
 from src.models.pillar_submission import PillarSubmission
+from src.models.page import Page, PageRevision, Media
 
 __all__ = [
     "User",
@@ -67,4 +68,7 @@ __all__ = [
     "Report",
     "Block",
     "PillarSubmission",
+    "Page",
+    "PageRevision",
+    "Media",
 ]
