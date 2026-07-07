@@ -39,7 +39,7 @@ cd apps/web && npx next dev
 curl -X POST http://localhost:8000/api/admin/seed \
   -H "X-Admin-Secret: your-secure-admin-key" \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@solhub.io","password":"Admin123!","full_name":"Super Admin"}'
+  -d '{"email":"admin-acct@your-domain","password":"########","full_name":"Super Admin"}'
 
 # 9. Open in browser
 # Web:  http://localhost:3000
