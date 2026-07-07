@@ -30,8 +30,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   experimental: {
     useLightningcss: true,
+    disablePostcssPresetEnv: true,
   },
-  allowedDevOrigins: ["192.168.9.12", "192.168.2.181", "localhost", "177.7.55.103"],
   async headers() {
     return [
       {
