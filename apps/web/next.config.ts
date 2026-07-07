@@ -28,7 +28,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["192.168.9.12", "192.168.2.181", "localhost"],
+  experimental: {
+    useLightningcss: true,
+  },
+  allowedDevOrigins: ["192.168.9.12", "192.168.2.181", "localhost", "177.7.55.103"],
   async headers() {
     return [
       {
