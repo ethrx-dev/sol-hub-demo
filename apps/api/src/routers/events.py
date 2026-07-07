@@ -97,8 +97,6 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in ("admin", "mentor") and current_user.membership_tier == "free":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins, mentors, or premium members can create events")
     event = Event(
         title=body.title, description=body.description,
         location=body.location, start_time=body.start_time, end_time=body.end_time,

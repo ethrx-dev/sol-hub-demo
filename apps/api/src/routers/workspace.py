@@ -49,7 +49,7 @@ async def _verify_workspace_access(db: DbSession, project_id: uuid.UUID, user_id
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No access to workspace")
 
 
-@router.get("/", response_model=WorkspaceResponse)
+@router.get("", response_model=WorkspaceResponse)
 async def get_workspace(project_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     project = await _verify_workspace_access(db, project_id, current_user.id)
 

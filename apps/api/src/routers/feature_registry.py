@@ -22,6 +22,7 @@ from src.routers.pillars import router as pillars_router
 from src.routers.admin_pages import router as admin_pages_router
 from src.routers.admin_media import router as admin_media_router
 from src.routers.pages import router as pages_router
+from src.routers.contact import router as contact_router
 
 FeatureRouter = tuple[str, APIRouter]
 
@@ -48,6 +49,7 @@ CORE_ROUTERS: list[FeatureRouter] = [
     ("core", admin_pages_router),
     ("core", admin_media_router),
     ("core", pages_router),
+    ("core", contact_router),
 ]
 
 FEATURE_ROUTERS: dict[str, APIRouter] = {}

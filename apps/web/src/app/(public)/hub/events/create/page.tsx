@@ -21,7 +21,7 @@ export default function CreateEventPage() {
     meeting_url: "",
     cover_image_url: "",
     max_attendees: "",
-    status: "draft",
+    status: "published",
   });
   const [sending, setSending] = useState(false);
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Image, Video, Trash2, Play } from "lucide-react";
+import { ArrowLeft, Image, Video, Trash2, Play, Upload, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -17,6 +17,8 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const [album, setAlbum] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.get(`/galleries/albums/${id}`).then(setAlbum).catch(() => router.push("/hub/galleries")).finally(() => setLoading(false));
@@ -28,6 +30,33 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
       toast.success("Album deleted");
       router.push("/hub/galleries");
     } catch { toast.error("Failed to delete album"); }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/galleries/albums/${id}/media/upload`,
+        { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Upload failed");
+      }
+      const media = await res.json();
+      setAlbum((prev: any) => prev ? { ...prev, media: [...prev.media, media], media_count: prev.media_count + 1 } : prev);
+      toast.success("Media added");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   if (loading) {
@@ -56,9 +85,16 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
             <p className="mt-1 text-sm text-muted-foreground">{album.media_count} item{album.media_count !== 1 ? "s" : ""} &middot; by {album.author_name}</p>
           </div>
           {isOwner && (
-            <Button variant="destructive" size="sm" onClick={deleteAlbum}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Album
-            </Button>
+            <div className="flex gap-2">
+              <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleUpload} />
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Add Media
+              </Button>
+              <Button variant="destructive" size="sm" onClick={deleteAlbum}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Album
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -67,7 +103,7 @@ export default function AlbumDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-lg border bg-card p-12 text-center">
           <Image className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-semibold">No media yet</h2>
-          <p className="mt-2 text-muted-foreground">This album is empty.</p>
+          <p className="mt-2 text-muted-foreground">{isOwner ? "Click Add Media to upload photos or videos." : "This album is empty."}</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

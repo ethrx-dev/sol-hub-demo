@@ -11,8 +11,16 @@ try:
         aws_secret_access_key=settings.S3_SECRET_KEY,
         config=BotoConfig(signature_version="s3v4"),
     )
+    _presign_client = boto3.client(
+        "s3",
+        endpoint_url=settings.S3_PUBLIC_URL,
+        aws_access_key_id=settings.S3_ACCESS_KEY,
+        aws_secret_access_key=settings.S3_SECRET_KEY,
+        config=BotoConfig(signature_version="s3v4"),
+    )
 except ImportError:
     _s3_client = None
+    _presign_client = None
 
 
 def get_s3_client():
@@ -33,8 +41,9 @@ async def upload_file(storage_key: str, data: bytes, content_type: str) -> str:
 
 
 def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
-    client = get_s3_client()
-    return client.generate_presigned_url(
+    if _presign_client is None:
+        raise RuntimeError("boto3 is not installed")
+    return _presign_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.S3_BUCKET, "Key": storage_key},
         ExpiresIn=expires_in,

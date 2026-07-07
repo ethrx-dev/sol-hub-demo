@@ -36,7 +36,7 @@ def _media_type_from_urls(urls: list[str]) -> str | None:
     return None
 
 
-@router.get("/", response_model=PaginatedResponse[PostResponse])
+@router.get("", response_model=PaginatedResponse[PostResponse])
 async def get_feed(
     db: DbSession,
     current_user: CurrentUser,

@@ -139,6 +139,28 @@ async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(ge
     )
 
 
+@router.get("/posts/by-slug/{slug}", response_model=BlogPostResponse)
+async def get_post_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(BlogPost).where(BlogPost.slug == slug).options(selectinload(BlogPost.author), selectinload(BlogPost.category_rel))
+    )
+    post = result.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    post.view_count += 1
+    await db.flush()
+    return BlogPostResponse(
+        id=post.id, title=post.title, slug=post.slug, content=post.content,
+        excerpt=post.excerpt, cover_image=post.cover_image,
+        author_id=post.author_id, author_name=post.author.full_name or post.author.email,
+        author_avatar=post.author.avatar_url,
+        category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
+        tags=post.tags, status=post.status, is_featured=post.is_featured,
+        view_count=post.view_count, published_at=post.published_at,
+        created_at=post.created_at, updated_at=post.updated_at,
+    )
+
+
 @router.get("/posts/{post_id}", response_model=BlogPostResponse)
 async def get_post(post_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(

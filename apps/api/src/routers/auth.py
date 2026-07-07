@@ -135,17 +135,18 @@ async def refresh(request: Request, body: RefreshRequest, db: DbSession):
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(body: RefreshRequest, db: DbSession):
-    token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
-    result = await db.execute(
-        select(RefreshToken).where(
-            RefreshToken.token_hash == token_hash,
-            RefreshToken.is_revoked == False,
+async def logout(db: DbSession, body: RefreshRequest | None = None):
+    if body and body.refresh_token:
+        token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
+        result = await db.execute(
+            select(RefreshToken).where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.is_revoked == False,
+            )
         )
-    )
-    stored = result.scalar_one_or_none()
-    if stored:
-        stored.is_revoked = True
+        stored = result.scalar_one_or_none()
+        if stored:
+            stored.is_revoked = True
 
 
 @router.post("/change-password", status_code=status.HTTP_200_OK)

@@ -39,7 +39,7 @@ async def _can_manage_milestones(db: DbSession, project_id: uuid.UUID, user_id: 
     return False
 
 
-@router.post("/", response_model=MilestoneResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MilestoneResponse, status_code=status.HTTP_201_CREATED)
 async def create_milestone(
     project_id: uuid.UUID,
     body: MilestoneCreateRequest,
@@ -62,7 +62,7 @@ async def create_milestone(
     return milestone
 
 
-@router.get("/", response_model=PaginatedResponse[MilestoneResponse])
+@router.get("", response_model=PaginatedResponse[MilestoneResponse])
 async def list_milestones(
     project_id: uuid.UUID,
     db: DbSession,

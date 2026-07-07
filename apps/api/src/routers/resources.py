@@ -11,7 +11,7 @@ from src.schemas.common import MessageResponse, PaginatedResponse
 router = APIRouter(prefix="/api/resources", tags=["resources"])
 
 
-@router.get("/", response_model=PaginatedResponse[ResourceResponse])
+@router.get("", response_model=PaginatedResponse[ResourceResponse])
 async def list_resources(
     db: DbSession,
     current_user: CurrentUser,
@@ -58,7 +58,7 @@ async def get_resource(resource_id: uuid.UUID, db: DbSession, current_user: Curr
     return resource
 
 
-@router.post("/", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
 async def create_resource(body: ResourceCreateRequest, db: DbSession, current_user: CurrentUser):
     if current_user.role not in ("admin", "mentor"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and mentors can create resources")

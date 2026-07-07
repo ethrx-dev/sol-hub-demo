@@ -100,7 +100,6 @@ export default function AdminPillarSubmissionsPage() {
                     src={s.storageUrl}
                     controls
                     playsInline
-                    crossOrigin="anonymous"
                     className="w-full aspect-[4/3] object-contain"
                   />
                 ) : (

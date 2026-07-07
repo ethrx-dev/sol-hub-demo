@@ -21,7 +21,7 @@ export default function PublicLayout({
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
             <div>
               <div className="flex items-center gap-2">
-                <img src="/sol-logo-white.svg" alt="SOL" className="h-8 w-auto" />
+                <img src="/sol-logo-white.svg" alt="SOL" className="h-14 w-auto" />
               </div>
               <p className="mt-3 text-sm text-white/70">
                 Nurturing dreams into successful businesses through community-powered incubation.
@@ -51,7 +51,7 @@ export default function PublicLayout({
             <div>
               <h4 className="text-sm font-semibold font-heading text-white">Support</h4>
               <ul className="mt-3 space-y-2">
-                <li><Link href="/about" className="text-sm text-white/70 hover:text-primary transition-colors">Contact</Link></li>
+                <li><Link href="/contact" className="text-sm text-white/70 hover:text-primary transition-colors">Contact</Link></li>
                 <li><span className="text-sm text-white/70">help@solhub.com</span></li>
               </ul>
             </div>

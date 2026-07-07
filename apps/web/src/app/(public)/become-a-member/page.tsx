@@ -60,9 +60,7 @@ export default function BecomeAMemberPage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-sage-light/40 via-background to-sage-light/20 py-24">
-        <div className="absolute -right-20 top-0 opacity-[0.04] pointer-events-none rotate-12">
-          <img src="/sol-icon-color.svg" alt="" className="w-[300px]" />
-        </div>
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-center mb-6">
             <img src="/sol-icon.svg" alt="SOL" className="h-16 w-16" />

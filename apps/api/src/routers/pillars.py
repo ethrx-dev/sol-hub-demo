@@ -43,22 +43,21 @@ async def _notify_admins(db: AsyncSession, pillar: str, submitter_name: str | No
 
 
 async def _send_email_notification(pillar: str, submitter_id: str | None):
-    try:
-        from src.config import settings
-        if not settings.RESEND_API_KEY:
-            return
-        import resend
-        resend.api_key = settings.RESEND_API_KEY
-        pillar_label = PILLAR_LABELS.get(pillar, pillar)
-        submitter_info = f"User ID: {submitter_id}" if submitter_id else "Anonymous user"
-        resend.Emails.send({
-            "from": settings.EMAIL_FROM or "SOL Hub <noreply@solhub.app>",
-            "to": ["love@spacesoflearning.com"],
-            "subject": f"New {pillar_label} Video Submission",
-            "html": f"<p>A new video submission has been received.</p><p>Pillar: <strong>{pillar_label}</strong></p><p>{submitter_info}</p><p>Log into the admin panel to review.</p>",
-        })
-    except Exception:
-        pass
+    from src.utils.email import send_email
+    from src.config import settings
+    pillar_label = PILLAR_LABELS.get(pillar, pillar)
+    submitter_info = f"User ID: {submitter_id}" if submitter_id else "Anonymous user"
+    html = (
+        f"<p>A new video submission has been received.</p>"
+        f"<p>Pillar: <strong>{pillar_label}</strong></p>"
+        f"<p>{submitter_info}</p>"
+        f"<p>Log into the admin panel to review.</p>"
+    )
+    await send_email(
+        to=settings.NOTIFICATION_EMAIL or "love@spacesoflearning.com",
+        subject=f"New {pillar_label} Video Submission",
+        body=html,
+    )
 
 
 PILLAR_ROLE_MAP = {
@@ -111,7 +110,7 @@ async def submit_video(
     storage_key = f"pillar-submissions/{pillar}/{uuid.uuid4()}"
     url = await upload_file(storage_key, data, mime)
 
-    direct_url = f"{settings.S3_ENDPOINT}/{settings.S3_BUCKET}/{storage_key}"
+    direct_url = f"{settings.S3_PUBLIC_URL}/{settings.S3_BUCKET}/{storage_key}"
 
     submission = PillarSubmission(
         id=str(uuid.uuid4()),
@@ -161,12 +160,12 @@ async def list_submissions(
     result = await db.execute(query.offset(skip).limit(limit))
     submissions = result.scalars().all()
 
-    from src.config import settings
+    from src.utils.storage import generate_presigned_url
 
     items = []
     for s in submissions:
         if s.storage_key:
-            url = f"{settings.S3_ENDPOINT}/{settings.S3_BUCKET}/{s.storage_key}"
+            url = generate_presigned_url(s.storage_key)
         else:
             url = s.storage_url
         items.append({

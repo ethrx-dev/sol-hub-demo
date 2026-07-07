@@ -16,7 +16,7 @@ from src.utils.storage import upload_file
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
-@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(body: ProjectCreateRequest, db: DbSession, current_user: CurrentUser):
     if current_user.role not in ("innovator", "admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only innovators can create projects")
@@ -44,7 +44,7 @@ async def create_project(body: ProjectCreateRequest, db: DbSession, current_user
     return project
 
 
-@router.get("/", response_model=PaginatedResponse[ProjectResponse])
+@router.get("", response_model=PaginatedResponse[ProjectResponse])
 async def list_projects(
     db: DbSession,
     current_user: CurrentUser,

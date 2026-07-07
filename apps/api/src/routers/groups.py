@@ -15,7 +15,7 @@ from src.schemas.common import MessageResponse, PaginatedResponse
 router = APIRouter(prefix="/api/groups", tags=["groups"])
 
 
-@router.post("/", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)
 async def create_group(body: GroupCreateRequest, db: DbSession, current_user: CurrentUser):
     if current_user.membership_tier == "free" and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Group creation requires a paid membership tier")
@@ -60,7 +60,7 @@ async def create_group(body: GroupCreateRequest, db: DbSession, current_user: Cu
     )
 
 
-@router.get("/", response_model=PaginatedResponse[GroupResponse])
+@router.get("", response_model=PaginatedResponse[GroupResponse])
 async def list_groups(
     db: DbSession,
     current_user: CurrentUser,

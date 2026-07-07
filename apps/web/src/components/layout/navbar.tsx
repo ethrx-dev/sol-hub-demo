@@ -25,16 +25,15 @@ const navLinks = [
     href: "/what-we-do",
     label: "What We Do",
     children: [
+      { href: "/what-we-do", label: "What We Do" },
       { href: "/innovators", label: "Innovators" },
       { href: "/mentors", label: "Mentors" },
       { href: "/investors", label: "Conscious Investors" },
     ],
   },
-  { href: "/become-a-member", label: "Become a Member" },
   { href: "/about", label: "About" },
-
-  { href: "/hub", label: "Hub" },
-  { href: "/resources", label: "Resources" },
+  { href: "/blog", label: "Blog" },
+  { href: "/donate", label: "Donate" },
 ];
 
 export function Navbar() {
@@ -47,10 +46,10 @@ export function Navbar() {
     <nav className="sticky top-0 z-40 w-full bg-white shadow-sm">
       <div className="mx-auto flex h-[70px] max-w-[1173px] items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/sol-logo.svg" alt="SOL" className="h-8 w-auto" />
+          <img src="/sol-logo.svg" alt="SOL" className="h-12 w-auto" />
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {navLinks.map((link) =>
             "children" in link && link.children ? (
               <DropdownMenu key={link.label}>
@@ -95,11 +94,10 @@ export function Navbar() {
             title="Take a tour of SOL Hub"
           >
             <Compass className="h-4 w-4" />
-            <span className="hidden lg:inline">Tour</span>
           </button>
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           {isAuthenticated ? (
             <>
               <NotificationDropdown />

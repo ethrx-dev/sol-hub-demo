@@ -2,15 +2,22 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/src/lib/auth";
+import { Handshake, Share2, TrendingUp, MessageCircle, Check } from "lucide-react";
 import { DynamicPage } from "@/src/components/admin/section-renderers";
 
 interface CMSPage {
   sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
 }
 
+const benefits = [
+  { icon: Share2, title: "Share Your Experiences", desc: "Bring your unique perspective to the table. Share lived experiences and insights that inspire and guide innovators on their journey." },
+  { icon: TrendingUp, title: "Commit to Long-Term Impact", desc: "Join us in creating meaningful, sustainable change. Focus on impact and regeneration, not just short-term gains." },
+  { icon: MessageCircle, title: "Be a Catalyst for Growth", desc: "Your guidance can be the turning point for a young innovator. Help shape the next generation of entrepreneurs." },
+];
+
+const gains = ["Access to aligned mentees and co-creators", "Invitation to workshops and think tanks", "The chance to co-author regenerative case studies"];
+
 export default function MentorsPage() {
-  const { isAuthenticated } = useAuth();
   const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
 
   useEffect(() => {
@@ -29,146 +36,85 @@ export default function MentorsPage() {
   }
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Hero */}
-      <section className="relative bg-gradient-to-br from-sage-light/30 via-background to-sage-light/20">
-        <div className="absolute -top-10 -right-10 opacity-[0.07] pointer-events-none">
-          <img src="/sol-icon-color.svg" alt="" className="w-[200px] sm:w-[300px] lg:w-[400px]" />
+    <>
+      <section className="relative py-24 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/mentors-hero-bg.jpg)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(26,26,46,0.85) 100%)" }} />
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-[1.4rem] font-bold font-heading leading-[1.1em] text-accent">Mentors</h2>
+          <h2 className="mt-6 text-4xl sm:text-5xl lg:text-[4rem] font-black font-heading leading-[1em] text-white">Empower Innovators, Shape the Future</h2>
+          <p className="mt-6 text-lg text-white/80 max-w-3xl mx-auto">Join SOL as a mentor and guide visionaries through challenges, growth, and meaningful impact.</p>
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
+      </section>
+
+
+
+      <section className="py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 md:grid-cols-2 items-center">
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[0_16px_0_16px] bg-accent/20">
-                  <img src="/sol-icon-color.svg" alt="" className="h-6 w-6 opacity-60" />
-                </div>
-                <span className="text-sm font-bold tracking-widest text-primary uppercase font-heading">Mentors</span>
-              </div>
-              <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">
-                Share Your Wisdom,{" "}
-                <span className="text-primary">Shape the Future</span>
-              </h1>
-              <p className="mt-2 text-sm font-medium text-primary uppercase tracking-wider font-heading">
-                The Guide, Teacher, or Healer
-              </p>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Your experience is the catalyst someone needs. Guide the next generation of entrepreneurs and be part of something bigger.
-              </p>
-              <div className="mt-8 flex gap-4">
-                <Link
-                  href={isAuthenticated ? "/mentor/browse" : "/register?pillar=mentors"}
-                  className="btn-sol btn-sol-primary text-sm"
-                >
-                  Become a Mentor
-                </Link>
-                <Link href="/what-we-do" className="btn-sol btn-sol-outline text-sm">
-                  Learn More
-                </Link>
-              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-accent">GET INVOLVED</span>
+              <h2 className="mt-4 text-[1.8rem] font-bold font-heading leading-[1.1em] text-foreground">How You Can Make a Difference</h2>
+              <p className="mt-6 text-muted-foreground leading-relaxed">At SOL, mentors are the backbone of innovation. Your experience, wisdom, and unique perspective can shape the next generation of ideas. By joining us, you'll guide innovators through challenges, growth, and meaningful impact.</p>
+              <p className="mt-4 text-muted-foreground font-bold">You'll gain:</p>
+              <ul className="mt-2 space-y-2">
+                {gains.map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-muted-foreground">
+                    <Check className="h-5 w-5 text-accent shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="relative hidden lg:block">
-              <div className="aspect-[4/3] rounded-[0_40px_0_40px] overflow-hidden shadow-lg">
-                <img src="/sol-mentors-team.jpg" alt="Mentors collaborating" className="h-full w-full object-cover" />
+            <div>
+              <div className="aspect-[4/3] overflow-hidden shadow-lg" style={{ borderRadius: "0 40px 0 40px" }}>
+                <img src="/mentors-hero.jpg" alt="Mentors" className="h-full w-full object-cover" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why Mentor */}
-      <section className="relative py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="text-sm font-bold tracking-widest text-primary uppercase font-heading">Why Mentor</span>
-            <h2 className="mt-2 text-3xl font-bold font-heading sm:text-4xl">Your Experience Matters</h2>
-            <p className="mt-4 text-muted-foreground leading-relaxed">
-              Mentorship is at the heart of SOL. By sharing your knowledge, skills, and perspective, you help innovators avoid pitfalls, gain confidence, and bring their visions to life. In return, you gain fresh perspectives, meaningful connections, and the satisfaction of shaping the future.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              { title: "Give Back", desc: "Share the lessons you've learned and help others navigate their entrepreneurial journey." },
-              { title: "Stay Inspired", desc: "Working with innovators keeps you at the cutting edge of new ideas and emerging trends." },
-              { title: "Build Legacy", desc: "Your guidance creates ripples that extend far beyond a single project or person." },
-            ].map((item) => (
-              <div key={item.title} className="rounded-[0_30px_0_30px] bg-sage-light/30 p-8 text-center">
-                <h3 className="text-xl font-bold font-heading">{item.title}</h3>
-                <p className="mt-3 text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+      <section className="py-16" style={{ background: "#f9fafb" }}>
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
+          <Handshake className="mx-auto h-[74px] w-[74px] text-accent mb-6" />
+          <h2 className="text-[1.8rem] font-bold font-heading leading-[1.1em] text-foreground">Benefits to our Network</h2>
+          <p className="mt-3 text-[1.4rem] font-bold font-heading leading-[1.1em] text-accent">Give back &amp; Find a Purpose</p>
         </div>
       </section>
 
-      {/* You'll Gain */}
-      <section className="relative py-20 bg-white">
+      <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="text-sm font-bold tracking-widest text-primary uppercase font-heading">What You&apos;ll Gain</span>
-            <h2 className="mt-2 text-3xl font-bold font-heading sm:text-4xl">Your Impact as a Mentor</h2>
-          </div>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              { title: "Access to Aligned Mentees", desc: "Connect with purpose-driven innovators who are actively seeking your expertise. Browse projects that match your background and interests." },
-              { title: "Workshops & Think Tanks", desc: "Get invited to exclusive workshops, brainstorm sessions, and strategic think tanks where your voice shapes the direction of new ventures." },
-              { title: "Co-Author Case Studies", desc: "Partner with innovators to document and publish regenerative case studies that showcase the real-world impact of your guidance." },
-            ].map((item) => (
-              <div key={item.title} className="rounded-[0_30px_0_30px] bg-sage-light/30 p-8 text-center">
-                <h3 className="text-xl font-bold font-heading">{item.title}</h3>
-                <p className="mt-3 text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="relative py-20 bg-sage-light/30">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold font-heading sm:text-4xl">How Mentoring Works</h2>
-            <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Flexible engagement that fits your schedule and expertise.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              { title: "Browse Projects", desc: "Explore vetted innovator projects aligned with your expertise and interests." },
-              { title: "Choose Your Level", desc: "From one-off advice sessions to long-term guidance — you decide your commitment." },
-              { title: "Track Impact", desc: "See the difference you're making through project milestones and founder growth." },
-            ].map((step, i) => (
-              <div key={step.title} className="relative text-center">
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[0_20px_0_20px] bg-accent/20 text-3xl font-bold text-accent-foreground font-heading">
-                  {(i + 1).toString().padStart(2, "0")}
+          <div className="grid gap-8 md:grid-cols-3">
+            {benefits.map((b, i) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.title} className="p-10 bg-white text-center" style={{ borderRadius: i % 2 === 0 ? "20px 0 20px 0" : "0 20px 0 20px", boxShadow: "0px 0px 25px 5px rgba(0,0,0,0.12)" }}>
+                  <Icon className="mx-auto h-[41px] w-[41px] text-accent mb-4" />
+                  <h3 className="text-[1.4rem] font-bold font-heading leading-[1.1em] text-foreground">{b.title}</h3>
+                  <p className="mt-3 text-muted-foreground">{b.desc}</p>
                 </div>
-                <h3 className="mt-6 text-xl font-bold font-heading">{step.title}</h3>
-                <p className="mt-2 text-muted-foreground">{step.desc}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative py-20 bg-sage-light/30">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold font-heading sm:text-4xl">Ready to Make a Difference?</h2>
-          <p className="mt-3 text-muted-foreground">
-            Your guidance could be the turning point for the next great innovator.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
-            <Link
-              href={isAuthenticated ? "/mentor/browse" : "/register?pillar=mentors"}
-              className="btn-sol btn-sol-primary uppercase text-sm"
-            >
-              Become a Mentor
-            </Link>
-            <Link href="/what-we-do" className="btn-sol btn-sol-outline uppercase text-sm">
-              Learn More
-            </Link>
-          </div>
+      <section className="relative py-24 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/mentors-cta-bg.jpg)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(26,26,46,0.85) 100%)" }} />
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-[1.8rem] font-bold font-heading leading-[1.1em] text-accent">Team UP with SOL</h2>
+          <h2 className="mt-4 text-[2.6rem] font-bold font-heading leading-[1em] text-white">Ready to Make a Difference?</h2>
+          <p className="mt-6 text-lg text-white/80 max-w-3xl mx-auto">We're excited to hear from you. Share your story and let's work together to shape the future of innovation.</p>
+          <Link href="/register" className="btn-sol uppercase text-sm text-white mt-10 inline-block"
+            style={{ background: "#729D64", borderRadius: "0 30px 0 30px", padding: "20px 40px" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#EFC89A"; e.currentTarget.style.color = "#000"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#729D64"; e.currentTarget.style.color = "#fff"; }}>
+            Join Today
+          </Link>
         </div>
       </section>
-    </div>
+    </>
   );
 }

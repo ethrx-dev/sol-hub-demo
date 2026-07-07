@@ -21,16 +21,14 @@ export default function GalleriesPage() {
   const [tab, setTab] = useState("all");
 
   useEffect(() => {
-    const params = tab !== "all" ? `?type=${tab}` : "";
     setLoading(true);
-    api.get(`/galleries/albums${params}&limit=50`).then((data: any) => setAlbums(data.items || [])).catch(() => {}).finally(() => setLoading(false));
+    api.get(`/galleries/albums`, { params: { limit: "50", ...(tab !== "all" ? { type: tab } : {}) } }).then((data: any) => setAlbums(data.items || [])).catch(() => {}).finally(() => setLoading(false));
   }, [tab]);
 
   useEffect(() => {
     if (tab === "feed") {
       setLoadingFeed(true);
-      const typeParam = "";
-      api.get(`/galleries/feed-media${typeParam}&limit=60`).then((data: any) => setFeedMedia(data.items || [])).catch(() => {}).finally(() => setLoadingFeed(false));
+      api.get(`/galleries/feed-media`, { params: { limit: "60" } }).then((data: any) => setFeedMedia(data.items || [])).catch(() => {}).finally(() => setLoadingFeed(false));
     }
   }, [tab]);
 

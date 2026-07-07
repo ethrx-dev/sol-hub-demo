@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import resend
 
@@ -27,17 +28,24 @@ def _render_template(body: str) -> str:
 
 
 async def send_email(to: str, subject: str, body: str) -> None:
+    if settings.ENVIRONMENT == "development":
+        logger.info(f"[DEV EMAIL] To: {to}, Subject: {subject}, Body: {body[:500]}...")
+        return
+
     if not settings.RESEND_API_KEY:
-        logger.info(f"[DEV EMAIL] To: {to}, Subject: {subject}, Body: {body[:200]}...")
+        logger.error("RESEND_API_KEY not set — cannot send email")
         return
 
     try:
-        r = resend.Emails.send({
-            "from": settings.EMAIL_FROM,
-            "to": [to],
-            "subject": subject,
-            "html": _render_template(body),
-        })
+        r = await asyncio.to_thread(
+            resend.Emails.send,
+            {
+                "from": settings.EMAIL_FROM,
+                "to": [to],
+                "subject": subject,
+                "html": _render_template(body),
+            },
+        )
         logger.info(f"Email sent to {to}, id={r.get('id')}")
     except Exception as e:
         logger.error(f"Failed to send email to {to}: {e}")

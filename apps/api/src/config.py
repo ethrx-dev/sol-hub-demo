@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     S3_ENDPOINT: str = "http://localhost:9000"
+    S3_PUBLIC_URL: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
     S3_BUCKET: str = "solhub"
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
 
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "SOL Hub <noreply@solhub.com>"
+    NOTIFICATION_EMAIL: str = "love@spacesoflearning.com"
     FRONTEND_URL: str = "http://localhost:3000"
 
     ENVIRONMENT: str = "development"

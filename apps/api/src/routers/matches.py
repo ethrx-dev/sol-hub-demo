@@ -15,7 +15,7 @@ from src.utils.notifications import create_notification
 router = APIRouter(prefix="/api/matches", tags=["matches"])
 
 
-@router.get("/", response_model=PaginatedResponse[MatchResponse])
+@router.get("", response_model=PaginatedResponse[MatchResponse])
 async def list_my_matches(
     db: DbSession,
     current_user: CurrentUser,
@@ -80,7 +80,7 @@ async def list_my_matches(
     return PaginatedResponse(items=items, total=total or 0, skip=skip, limit=limit)
 
 
-@router.post("/", response_model=MatchResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MatchResponse, status_code=status.HTTP_201_CREATED)
 async def create_match(body: MatchCreateRequest, db: DbSession, current_user: CurrentUser):
     project_result = await db.execute(
         select(Project).where(Project.id == uuid.UUID(body.project_id), Project.is_deleted == False)

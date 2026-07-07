@@ -2,7 +2,7 @@ import uuid
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -10,6 +10,8 @@ from sqlalchemy.orm import selectinload
 from src.database import get_db
 from src.deps import get_current_user
 from src.models.gallery import Album, AlbumMedia
+from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
+from src.utils.storage import upload_file
 from src.models.post import Post
 from src.models.user import User
 from src.schemas.gallery import (
@@ -186,6 +188,42 @@ async def add_media(
     await db.refresh(media)
     if not album.cover_media_url:
         album.cover_media_url = body.url
+    return AlbumMediaResponse(
+        id=media.id, url=media.url, thumb_url=media.thumb_url,
+        media_type=media.media_type, caption=media.caption,
+        width=media.width, height=media.height, order_index=media.order_index,
+        created_at=media.created_at,
+    )
+
+
+@router.post("/albums/{album_id}/media/upload", response_model=AlbumMediaResponse, status_code=status.HTTP_201_CREATED)
+async def upload_album_media(
+    album_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    album = await db.get(Album, album_id)
+    if not album:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Album not found")
+    if album.author_id != current_user.id and not current_user.is_super_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    mime = validate_file(file)
+    validate_file_size(file)
+    storage_key = generate_storage_key(file, mime)
+    data = await file.read()
+    url = await upload_file(storage_key, data, mime)
+
+    media_type = "video" if mime.startswith("video/") else "photo"
+    media = AlbumMedia(
+        album_id=album_id, url=url, media_type=media_type,
+    )
+    db.add(media)
+    await db.flush()
+    await db.refresh(media)
+    if not album.cover_media_url:
+        album.cover_media_url = url
     return AlbumMediaResponse(
         id=media.id, url=media.url, thumb_url=media.thumb_url,
         media_type=media.media_type, caption=media.caption,

@@ -204,9 +204,8 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       const ext = recordedBlob.type.includes("mp4") ? "mp4" : "webm";
       formData.append("video", recordedBlob, `intro.${ext}`);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
       const token = localStorage.getItem("auth_token");
-      const res = await fetch(apiBase + "/pillars/submit-video", {
+      const res = await fetch("http://localhost:8000/api/pillars/submit-video", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -306,7 +305,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
             muted
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/60" />
           <div className="absolute top-3 left-3 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs font-medium">REC</span>
@@ -314,17 +313,31 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
               {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
             </span>
           </div>
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 flex items-center gap-2">
             <span className="text-xs bg-white/20 rounded-full px-2.5 py-1">
-              {activeQuestion + 1} / 3
+              {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} / 1:30
             </span>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
-            <p className="text-sm font-medium text-white/90">{questions[activeQuestion].label}</p>
-            <div className="mt-2 h-1 w-full bg-white/20 rounded-full overflow-hidden">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 space-y-3 max-w-[200px]">
+            {questions.map((q, i) => (
+              <div
+                key={i}
+                className={`rounded-lg px-3 py-2 text-xs transition-all duration-300 ${
+                  i === activeQuestion
+                    ? "bg-primary/90 text-white font-semibold scale-105"
+                    : "bg-black/50 text-white/60"
+                }`}
+              >
+                <span className="font-bold mr-1">Q{i + 1}:</span>
+                {q.label}
+              </div>
+            ))}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300 rounded-full"
-                style={{ width: `${((SECONDS_PER_QUESTION - questionSeconds) / SECONDS_PER_QUESTION) * 100}%` }}
+                style={{ width: `${(elapsed / TOTAL_SECONDS) * 100}%` }}
               />
             </div>
           </div>
