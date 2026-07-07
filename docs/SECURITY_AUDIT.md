@@ -452,6 +452,9 @@ JWT tokens are stored in `localStorage`, which is accessible to any JavaScript r
 | June 29, 2026 | L1 fixed: Pinned all frontend dependency versions in `apps/web/package.json` |
 | June 29, 2026 | L2 fixed: Added S3 credential startup check in `main.py` lifespan |
 | June 29, 2026 | L3 fixed: Generated strong `ADMIN_SEED_KEY` in `apps/api/.env` |
+| July 7, 2026  | Email system hardened: async Resend wrapper with `asyncio.to_thread`; dev/prod mode guard (logs in dev, sends in prod); `NOTIFICATION_EMAIL` config; eliminated silent failure in pillar email notification |
+| July 7, 2026  | Membership gates: removed from gallery media upload, event creation — any authenticated user can upload to own albums and create events |
+| July 7, 2026  | Contact form: added admin notification + user confirmation via shared email pipeline |
 
 ---
 
