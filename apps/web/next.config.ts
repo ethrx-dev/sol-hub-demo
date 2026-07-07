@@ -28,6 +28,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  useLightningcss: true,
   experimental: {
     useLightningcss: true,
     disablePostcssPresetEnv: true,
