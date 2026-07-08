@@ -1,10 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status, Query
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, or_, and_
 
 from src.deps import DbSession, CurrentUser
-from src.models.post import Post
+from src.models.post import Post, PostPrivacy
+from src.models.connection import Connection
 from src.models.comment import Comment
 from src.models.like import Like
 from src.models.user import User
@@ -13,6 +14,8 @@ from src.schemas.feed import (
     PostResponse,
     CommentResponse,
     CreateCommentRequest,
+    UpdatePostRequest,
+    UpdateCommentRequest,
 )
 from src.schemas.common import MessageResponse, PaginatedResponse
 
@@ -33,7 +36,7 @@ def _media_type_from_urls(urls: list[str]) -> str | None:
     return None
 
 
-@router.get("/", response_model=PaginatedResponse[PostResponse])
+@router.get("", response_model=PaginatedResponse[PostResponse])
 async def get_feed(
     db: DbSession,
     current_user: CurrentUser,
@@ -41,7 +44,21 @@ async def get_feed(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
-    base_where = [Post.is_deleted == False]
+    following_subq = select(Connection.following_id).where(
+        Connection.follower_id == current_user.id
+    ).scalar_subquery()
+
+    base_where = [
+        Post.is_deleted == False,
+        or_(
+            Post.privacy == PostPrivacy.public,
+            Post.author_id == current_user.id,
+            and_(
+                Post.privacy == PostPrivacy.connections_only,
+                Post.author_id.in_(following_subq),
+            ),
+        ),
+    ]
     if media_type:
         base_where.append(Post.media_urls != [])
 
@@ -81,6 +98,7 @@ async def get_feed(
             author_avatar=author_avatar,
             content=post.content,
             media_urls=urls,
+            privacy=post.privacy.value,
             like_count=like_count or 0,
             comment_count=comment_count or 0,
             is_liked=is_liked,
@@ -94,10 +112,12 @@ async def get_feed(
 
 @router.post("/posts", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 async def create_post(body: CreatePostRequest, db: DbSession, current_user: CurrentUser):
+    privacy_value = body.privacy if body.privacy in ("public", "connections_only", "private") else "public"
     post = Post(
         author_id=current_user.id,
         content=body.content,
         media_urls=body.media_urls,
+        privacy=PostPrivacy(privacy_value),
     )
     db.add(post)
     await db.flush()
@@ -109,6 +129,7 @@ async def create_post(body: CreatePostRequest, db: DbSession, current_user: Curr
         author_avatar=current_user.avatar_url,
         content=post.content,
         media_urls=post.media_urls or [],
+        privacy=post.privacy.value,
         like_count=0,
         comment_count=0,
         is_liked=False,
@@ -117,12 +138,66 @@ async def create_post(body: CreatePostRequest, db: DbSession, current_user: Curr
     )
 
 
+@router.patch("/posts/{post_id}", response_model=PostResponse)
+async def update_post(post_id: uuid.UUID, body: UpdatePostRequest, db: DbSession, current_user: CurrentUser):
+    result = await db.execute(select(Post).where(Post.id == post_id, Post.is_deleted == False))
+    post = result.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if post.author_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to edit this post")
+
+    if body.content is not None:
+        post.content = body.content
+    if body.media_urls is not None:
+        post.media_urls = body.media_urls
+    if body.privacy is not None:
+        privacy_value = body.privacy if body.privacy in ("public", "connections_only", "private") else "public"
+        post.privacy = PostPrivacy(privacy_value)
+    await db.flush()
+
+    author = await db.get(User, post.author_id)
+    like_count = await db.scalar(select(func.count(Like.id)).where(Like.post_id == post.id))
+    comment_count = await db.scalar(select(func.count(Comment.id)).where(Comment.post_id == post.id))
+    is_liked = bool(await db.scalar(select(Like.id).where(Like.post_id == post.id, Like.user_id == current_user.id)))
+
+    return PostResponse(
+        id=str(post.id),
+        author_id=str(post.author_id),
+        author_name=author.full_name if author else None,
+        author_avatar=author.avatar_url if author else None,
+        content=post.content,
+        media_urls=post.media_urls or [],
+        privacy=post.privacy.value,
+        like_count=like_count or 0,
+        comment_count=comment_count or 0,
+        is_liked=is_liked,
+        created_at=post.created_at,
+        updated_at=post.updated_at,
+    )
+
+
 @router.get("/posts/{post_id}", response_model=PostResponse)
 async def get_post(post_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
+    following_subq = select(Connection.following_id).where(
+        Connection.follower_id == current_user.id
+    ).scalar_subquery()
+
     result = await db.execute(
         select(Post, User.full_name, User.avatar_url)
         .join(User, Post.author_id == User.id)
-        .where(Post.id == post_id, Post.is_deleted == False)
+        .where(
+            Post.id == post_id,
+            Post.is_deleted == False,
+            or_(
+                Post.privacy == PostPrivacy.public,
+                Post.author_id == current_user.id,
+                and_(
+                    Post.privacy == PostPrivacy.connections_only,
+                    Post.author_id.in_(following_subq),
+                ),
+            ),
+        )
     )
     row = result.one_or_none()
     if not row:
@@ -149,6 +224,7 @@ async def get_post(post_id: uuid.UUID, db: DbSession, current_user: CurrentUser)
             author_avatar=c_avatar,
             content=c.content,
             created_at=c.created_at,
+            updated_at=c.updated_at,
         ))
 
     return PostResponse(
@@ -158,6 +234,7 @@ async def get_post(post_id: uuid.UUID, db: DbSession, current_user: CurrentUser)
         author_avatar=author_avatar,
         content=post.content,
         media_urls=post.media_urls or [],
+        privacy=post.privacy.value,
         like_count=like_count or 0,
         comment_count=comment_count or 0,
         is_liked=is_liked,
@@ -203,6 +280,34 @@ async def add_comment(post_id: uuid.UUID, body: CreateCommentRequest, db: DbSess
         author_avatar=current_user.avatar_url,
         content=comment.content,
         created_at=comment.created_at,
+        updated_at=comment.updated_at,
+    )
+
+
+@router.patch("/posts/{post_id}/comments/{comment_id}", response_model=CommentResponse)
+async def update_comment(post_id: uuid.UUID, comment_id: uuid.UUID, body: UpdateCommentRequest, db: DbSession, current_user: CurrentUser):
+    result = await db.execute(
+        select(Comment).where(Comment.id == comment_id, Comment.post_id == post_id)
+    )
+    comment = result.scalar_one_or_none()
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    if comment.author_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to edit this comment")
+
+    comment.content = body.content
+    await db.flush()
+
+    author = await db.get(User, comment.author_id)
+    return CommentResponse(
+        id=str(comment.id),
+        post_id=str(comment.post_id),
+        author_id=str(comment.author_id),
+        author_name=author.full_name if author else None,
+        author_avatar=author.avatar_url if author else None,
+        content=comment.content,
+        created_at=comment.created_at,
+        updated_at=comment.updated_at,
     )
 
 
@@ -224,6 +329,7 @@ async def list_comments(post_id: uuid.UUID, db: DbSession, current_user: Current
             author_avatar=c_avatar,
             content=c.content,
             created_at=c.created_at,
+            updated_at=c.updated_at,
         ))
     return items
 

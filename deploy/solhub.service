@@ -1,0 +1,18 @@
+[Unit]
+Description=SOL Hub - Full Stack Application
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+WorkingDirectory=/opt/sol-hub
+ExecStart=/opt/sol-hub/scripts/start.sh --docker
+ExecStop=/opt/sol-hub/scripts/stop.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

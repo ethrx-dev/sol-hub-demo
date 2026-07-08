@@ -13,7 +13,7 @@ from src.schemas.common import PaginatedResponse
 router = APIRouter(prefix="/api/investments", tags=["investments"])
 
 
-@router.post("/", response_model=InvestmentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=InvestmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_investment(body: InvestmentCreateRequest, db: DbSession, current_user: CurrentUser):
     if current_user.role != "investor":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only investors can commit funding")
@@ -48,7 +48,7 @@ async def create_investment(body: InvestmentCreateRequest, db: DbSession, curren
     return investment
 
 
-@router.get("/", response_model=PaginatedResponse[InvestmentResponse])
+@router.get("", response_model=PaginatedResponse[InvestmentResponse])
 async def list_my_investments(
     db: DbSession,
     current_user: CurrentUser,

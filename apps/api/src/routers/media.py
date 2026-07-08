@@ -9,6 +9,9 @@ router = APIRouter(prefix="/api/media", tags=["media"])
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file_endpoint(file: UploadFile = File(...), current_user: CurrentUser = None):
+    if current_user.membership_tier == "free":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Upgrade your membership to upload files")
+
     mime = validate_file(file)
     validate_file_size(file)
     storage_key = generate_storage_key(file, mime)

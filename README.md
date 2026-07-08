@@ -39,7 +39,7 @@ cd apps/web && npx next dev
 curl -X POST http://localhost:8000/api/admin/seed \
   -H "X-Admin-Secret: your-secure-admin-key" \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@solhub.io","password":"Admin123!","full_name":"Super Admin"}'
+  -d '{"email":"admin-acct@your-domain","password":"########","full_name":"Super Admin"}'
 
 # 9. Open in browser
 # Web:  http://localhost:3000
@@ -85,37 +85,31 @@ curl -X POST http://localhost:8000/api/admin/seed \
 sol-hub/
 ├── apps/
 │   ├── web/                        # Next.js 15 frontend (App Router)
-│   │   ├── src/app/                # 30+ route pages
-│   │   │   ├── (public)/           # Landing, about, pricing
-│   │   │   ├── (auth)/             # Login, register, forgot-password, onboarding
-│   │   │   ├── (dashboard)/        # Role-based dashboards (innovator, mentor, investor, admin)
-│   │   │   ├── hub/                # Community (feed, groups, members)
-│   │   │   ├── projects/           # Project detail + workspace
-│   │   │   └── resources/          # Solution Bank
-│   │   ├── components/             # UI, layout, forms, shared
-│   │   ├── lib/                    # API client, auth, utils
-│   │   └── stores/                 # Zustand state
+│   │   └── src/app/
+│   │       ├── (public)/           # Landing, about, pricing, blog, contact, donate
+│   │       ├── (auth)/             # Login, register, forgot-password, onboarding, verify-email
+│   │       ├── (dashboard)/        # Role-based dashboards (innovator, mentor, investor, admin)
+│   │       ├── hub/                # Community (feed, groups, members, forums, events, galleries, blog)
+│   │       └── settings/           # Profile settings, billing, avatar upload
 │   │
 │   ├── api/                        # FastAPI backend
-│   │   ├── src/
-│   │   │   ├── models/             # 17 SQLAlchemy models
-│   │   │   ├── schemas/            # Pydantic request/response schemas
-│   │   │   ├── routers/            # Route modules
-│   │   │   ├── middleware/         # Security headers
-│   │   │   └── utils/             # Security, email, file, storage
-│   │   ├── alembic/                # Database migrations
-│   │   └── .venv/                  # Python virtual environment
+│   │   └── src/
+│   │       ├── models/             # 33 SQLAlchemy models
+│   │       ├── schemas/            # 29 Pydantic request/response schemas
+│   │       ├── routers/            # 32 route modules
+│   │       └── utils/             # Security, email, file, storage, notifications
 │   │
 │   └── worker/                     # Celery background tasks
-│       └── src/tasks.py
 │
 ├── packages/
 │   └── shared/                     # TypeScript types + Zod validators
 │
+├── deploy/                         # Production deployment (nginx, systemd, setup script)
 ├── docker/                         # Docker Compose + Dockerfiles
 ├── infra/terraform/                # AWS infrastructure template
+├── scripts/                        # start.sh, stop.sh, backup.sh, restore.sh
 ├── .github/workflows/              # CI pipeline
-└── docs/                           # API reference + setup guide
+└── docs/                           # API reference, setup guide, security audit
 ```
 
 ---
@@ -291,8 +285,8 @@ curl -X POST http://localhost:8000/api/admin/seed \
 
 | Module | Prefix | Routes |
 |---|---|---|
-| Auth | `/api/auth` | register, login, refresh, logout, forgot-password, reset-password, me |
-| Users | `/api/users` | profile update, onboarding, avatar, video, notifications |
+| Auth | `/api/auth` | register, login, refresh, logout, forgot-password, reset-password, verify-email, resend-verification, me |
+| Users | `/api/users` | profile update, onboarding, avatar, video, notification-preferences |
 | Projects | `/api/projects` | CRUD, submit, milestones, workspace, documents, messages |
 | Matches | `/api/matches` | list, create, accept/decline, detail |
 | Investments | `/api/investments` | commit, list, financial report |
@@ -303,10 +297,21 @@ curl -X POST http://localhost:8000/api/admin/seed \
 | Members | `/api/members` | directory listing |
 | Resources | `/api/resources` | CRUD |
 | Notifications | `/api/notifications` | list, mark read |
+| Events | `/api/events` | CRUD, RSVP, list upcoming/past |
+| Galleries | `/api/galleries` | albums CRUD, album media, media upload, feed-media |
+| Blog | `/api/blog` | posts CRUD, categories, public listing |
+| Forums | `/api/forums` | categories, threads, replies |
+| Connections | `/api/connections` | follow/unfollow, list followers/following |
+| Activity | `/api/activity` | timeline feed |
+| Search | `/api/search` | global search across entities |
+| Contact | `/api/contact` | contact form submission |
+| Doc Library | `/api/doc-library` | document CRUD |
+| Pillars | `/api/pillars` | video submissions (innovators, mentors, investors) |
+| Pages | `/api/pages` | CMS page CRUD |
+| Moderation | `/api/moderation` | report content, block users |
 | Membership | `/api/membership` | plans, checkout, Stripe webhooks |
 | Media | `/api/media` | upload |
-| Notification Prefs | `/api/users/me/notification-preferences` | get, update |
-| Admin | `/api/admin` | seed (one-time), stats, users, projects, matches, groups, posts, resources |
+| Admin | `/api/admin` | seed, stats, users, projects, matches, groups, posts, resources, media, pages, pricing, reports, blog, pillar-submissions |
 
 ---
 
@@ -341,6 +346,12 @@ The seed endpoint is idempotent — it rejects any subsequent requests with `409
 | `/admin/groups` | `GET /api/admin/groups`, `DELETE .../{id}` | Manage groups (super admin) |
 | `/admin/posts` | `GET /api/admin/posts`, `DELETE .../{id}` | Manage feed posts (super admin) |
 | `/admin/resources` | `GET /api/admin/resources`, `DELETE .../{id}` | Manage resources (super admin) |
+| `/admin/media` | `GET /api/admin/media`, `POST .../upload`, `DELETE .../{id}` | Media library upload/delete |
+| `/admin/pages` | `GET /api/admin/pages`, `POST ...`, `PATCH .../{id}` | CMS page management |
+| `/admin/pricing` | `GET /api/admin/pricing`, `PATCH ...` | Manage membership pricing plans |
+| `/admin/blog` | `GET /api/admin/blog`, `POST ...`, `PATCH ...`, `DELETE ...` | Blog post CRUD |
+| `/admin/pillar-submissions` | `GET /api/admin/pillar-submissions` | Review pillar video submissions |
+| `/admin/reports` | `GET /api/admin/reports`, `PATCH .../status` | Moderate reported content |
 
 ### Super Admin
 
@@ -435,11 +446,16 @@ docker compose -f docker/docker-compose.yml up -d --build
 - [ ] Configure `CORS_ORIGINS` with your actual domain
 - [ ] Set up a real PostgreSQL (RDS, Cloud SQL, etc.)
 - [ ] Set up a real Redis (ElastiCache, Upstash, etc.)
-- [ ] Configure S3-compatible storage (S3, R2, GCS)
+- [ ] Configure S3-compatible storage (S3, R2, GCS) with strong access keys
+- [ ] Verify Resend sender domain and set `RESEND_API_KEY`
+- [ ] Set `EMAIL_FROM` to a verified sender in Resend
+- [ ] Set `NOTIFICATION_EMAIL` to the admin contact
+- [ ] Set `FRONTEND_URL` to the production domain
 - [ ] Set Stripe live keys
-- [ ] Set up SSL certificate (Let's Encrypt via Caddy/Nginx)
+- [ ] Set up SSL certificate (Let's Encrypt via Certbot/Nginx)
+- [ ] Configure `ENABLED_FEATURES` for production
 - [ ] Configure Sentry DSN for error monitoring
-- [ ] Enable database backups (automated pg_dump)
+- [ ] Enable database backups (automated pg_dump via `scripts/backup.sh`)
 - [ ] Set up monitoring (healthchecks, Uptime Kuma, etc.)
 
 ### VPS Deployment (Minimal)
@@ -452,6 +468,38 @@ docker compose -f docker/docker-compose.yml up -d
 docker compose exec api alembic upgrade head
 # Seed admin: curl -X POST .../api/admin/seed ...
 ```
+
+### VPS Deployment (Production — Systemd + Nginx)
+
+The `deploy/` directory contains production-ready service files:
+
+| File | Purpose |
+|---|---|
+| `deploy/nginx.conf` | Nginx reverse proxy with SSL, security headers, 50 MB upload limit |
+| `deploy/solhub.service` | Meta service that starts all docker services |
+| `deploy/solhub-api.service` | API service (uvicorn) |
+| `deploy/solhub-web.service` | Web service (Next.js) |
+| `deploy/setup.sh` | One-time setup: installs Docker, Python, Node.js, copies files, creates .env |
+
+```bash
+# One-time setup (as root):
+sudo bash deploy/setup.sh
+
+# Edit /opt/sol-hub/.env with production values, then:
+systemctl start solhub
+
+# Or use the startup script:
+bash scripts/start.sh --docker       # Docker mode
+bash scripts/start.sh --production   # Docker mode, no reload
+```
+
+The `scripts/` directory provides helpers:
+| Script | Purpose |
+|---|---|
+| `scripts/start.sh` | Start all services (Docker infra + API + Web) |
+| `scripts/stop.sh` | Stop all services gracefully |
+| `scripts/backup.sh` | Database backup (pg_dump) |
+| `scripts/restore.sh` | Restore from a backup archive |
 
 ### Cloud Deployment (AWS)
 
@@ -471,25 +519,27 @@ The `infra/terraform/main.tf` provides a template for:
 ### System Diagram
 
 ```
-                     Cloudflare / DNS
-                           │
-                        Caddy (TLS)
-                        ╱        ╲
-                ┌──── Next.js ────────┐
-                │   :3000             │   SSR pages + static assets
-                │   (SSR/SSG)         │
-                └──────┬──────────────┘
-                       │
-                ┌──── API ────────────┐
-                │  FastAPI :8000      │   Business logic + auth
-                └───┬─────┬───────────┘
-                    │     │
-          ┌─────────┤     ├──────────────┐
-     PostgreSQL    Redis              MinIO/S3
-     :5432         :6379              :9000
-                    │
-               Celery Worker
-           (background tasks)
+                         Cloudflare / DNS
+                              │
+                    ┌── Nginx/Caddy (TLS) ──┐
+                    │       :443             │   SSL termination
+                    └───┬───────────────┬────┘
+                        │               │
+                 ┌── Next.js :3000 ──┐  │
+                 │  SSR/SSG pages    │  │
+                 │  API rewrites     │  │
+                 └──────┬────────────┘  │
+                        │               │
+                 ┌── FastAPI :8000 ────┐ │
+                 │  Business logic     │ │
+                 │  Auth + middleware  │ │
+                 └──┬────┬────┬────┬───┘ │
+                    │    │    │    │      │
+           ┌────────┤    │    │    └──────┤
+      PostgreSQL   Redis  S3/MinIO    Celery Worker
+      :5432        :6379  :9000      (background)
+
+           WebSocket: ws://.../api/ws/workspace/{id}
 ```
 
 ### Data Flow
@@ -512,27 +562,50 @@ User → Browser → Next.js (SSR) → API (FastAPI) → PostgreSQL
 - JWT access tokens (30min) + refresh tokens (7 days)
 - Tokens transmitted via `Authorization: Bearer` header
 - Passwords hashed with bcrypt via passlib
+- Passwords require minimum 8 characters
+- WebSocket tokens passed via `Sec-WebSocket-Protocol` header (not URL query params)
 
 ### API Security
-- Rate limiting on auth endpoints
-- CORS restricted to explicit allowlist
-- Security headers on all responses (CSP, HSTS, X-Frame-Options, etc.)
-- Role-based access control at the route level (CurrentAdmin, CurrentInnovator, etc.)
+- Rate limiting on auth endpoints (register 5/min, login 10/min, password reset 3-5/hour)
+- CORS restricted to explicit allowlist (env-configurable)
+- Security headers on all responses (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+- Role-based access control at the route level (`CurrentAdmin`, `CurrentInnovator`, etc.)
+- Membership tier enforcement on project/group creation (free users restricted)
+- Draft projects hidden from non-owners (returns 404)
+- Startup guards block weak `SECRET_KEY` / default S3 credentials in production
 
 ### File Uploads
-- File type validated by reading magic bytes, not extension
-- Files renamed to UUID server-side
+- File type validated by reading magic bytes (`python-magic`), not extension
+- Files renamed to UUID server-side (`generate_storage_key`)
 - Stored on separate S3/MinIO domain (not app origin)
+- 50 MB max file size enforced (`validate_file_size`)
+- Avatar, video, project attachments, workspace documents all validated
+
+### Email (Resend)
+- All email sending wrapped in async helper (`utils/email.py`)
+- Development mode: emails logged to console, never actually sent
+- Production mode: sent via Resend API with HTML template
+- Contact form sends admin notification + user confirmation
+- Pillar submissions trigger email notifications
 
 ### Stripe Webhooks
-- Signature verified on every request
-- Processed event IDs tracked for idempotency
+- Signature verified on every request via `stripe.Webhook.construct_event()`
+- Processed event IDs tracked for idempotency (prevents duplicate processing)
 - Full lifecycle handled: checkout, invoice, subscription events
+- Demo mode guarded by `ENVIRONMENT=development` check
 
 ### Database
 - All queries use SQLAlchemy ORM (parameterized queries)
 - No raw SQL
 - Migrations version-controlled via Alembic
+
+### Additional Protections
+- Rate limiting on auth endpoints via slowapi
+- Webhook idempotency via `WebhookEvent` model
+- Super admin privileges for destructive operations (group/post/resource deletion, user deactivation)
+- Strict CSP headers limit script sources
+- Error handler returns generic messages (no stack traces leaked)
+- `.env` excluded from git; lockfiles committed
 
 ---
 
@@ -547,14 +620,30 @@ User → Browser → Next.js (SSR) → API (FastAPI) → PostgreSQL
 | `SECRET_KEY` | Yes | `dev-secret` | JWT signing secret |
 | `ADMIN_SEED_KEY` | No | `""` | Secret for bootstrapping first admin |
 | `ENVIRONMENT` | No | `development` | `development` or `production` |
-| `CORS_ORIGINS` | No | `["http://localhost:3000"]` | Allowed CORS origins |
+| `CORS_ORIGINS` | No | `["http://localhost:3000"]` | Allowed CORS origins (JSON array) |
 | `S3_ENDPOINT` | Yes | `http://localhost:9000` | S3-compatible storage endpoint |
+| `S3_PUBLIC_URL` | No | `http://localhost:9000` | Public-facing S3 URL |
 | `S3_ACCESS_KEY` | Yes | `minioadmin` | S3 access key |
 | `S3_SECRET_KEY` | Yes | `minioadmin` | S3 secret key |
 | `S3_BUCKET` | No | `solhub` | S3 bucket name |
+| `RESEND_API_KEY` | No | `""` | Resend email API key (logs to console in dev) |
+| `EMAIL_FROM` | No | `SOL Hub <noreply@solhub.com>` | Sender address for outgoing emails |
+| `NOTIFICATION_EMAIL` | No | `love@spacesoflearning.com` | Admin notification recipient |
+| `FRONTEND_URL` | No | `http://localhost:3000` | Frontend URL for email links |
 | `STRIPE_SECRET_KEY` | No | — | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | No | — | Stripe webhook signing secret |
 | `SENTRY_DSN` | No | — | Sentry error tracking DSN |
+| `ENABLED_FEATURES` | No | `connections,forums,events,galleries,document_library,blog,reporting` | Comma-separated feature flags |
+
+### Web (`apps/web/.env`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:8000/api` | API base URL (include `/api` prefix) |
+| `NEXT_PUBLIC_S3_URL` | No | `http://localhost:9000` | Public S3/MinIO URL for media |
+| `NEXT_PUBLIC_ENABLED_FEATURES` | No | `connections` | Feature flags matching API |
+| `NEXT_PUBLIC_SHAPO_WIDGET_ID` | No | — | Shapo testimonials widget ID |
+| `NEXT_PUBLIC_SHAPO_FORM_ID` | No | — | Shapo testimonial submission form ID |
 
 ### Web (`apps/web/.env`)
 

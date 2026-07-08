@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from typing import List
 
 
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     S3_ENDPOINT: str = "http://localhost:9000"
+    S3_PUBLIC_URL: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "minioadmin"
     S3_SECRET_KEY: str = "minioadmin"
     S3_BUCKET: str = "solhub"
@@ -19,18 +21,40 @@ class Settings(BaseSettings):
 
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "SOL Hub <noreply@solhub.com>"
+    NOTIFICATION_EMAIL: str = "love@spacesoflearning.com"
     FRONTEND_URL: str = "http://localhost:3000"
 
     ENVIRONMENT: str = "development"
 
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://192.168.2.181:3000"]
 
     SENTRY_DSN: str | None = None
     ADMIN_SEED_KEY: str = ""
 
+    ENABLED_FEATURES: str = (
+        "connections,forums,events,galleries,document_library,blog,reporting"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_default_secrets(cls, values):
+        env = values.get("ENVIRONMENT", "development")
+        if env != "development":
+            sk = values.get("SECRET_KEY", "")
+            if sk in ("dev-secret", "change-this-to-a-random-secret", ""):
+                raise ValueError("SECRET_KEY must be changed from default in non-development environments")
+            if values.get("S3_ACCESS_KEY") == "minioadmin" or values.get("S3_SECRET_KEY") == "minioadmin":
+                raise ValueError("S3 credentials must be changed from default in non-development environments")
+        return values
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+
+    @property
+    def features(self) -> set[str]:
+        return {f.strip() for f in self.ENABLED_FEATURES.split(",") if f.strip()}
 
 
 settings = Settings()

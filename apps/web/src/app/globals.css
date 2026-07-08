@@ -22,6 +22,7 @@
   --color-tan: #EFC89A;
   --color-taupe: #D4CBC1;
   --color-yellow: #F8E704;
+  --color-dark: #000000;
   --font-sans: var(--font-roboto);
   --font-heading: var(--font-poppins);
   --radius: 0.5rem;

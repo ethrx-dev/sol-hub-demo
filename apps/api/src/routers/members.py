@@ -9,7 +9,7 @@ from src.schemas.common import PaginatedResponse
 router = APIRouter(prefix="/api/members", tags=["members"])
 
 
-@router.get("/", response_model=PaginatedResponse[MemberResponse])
+@router.get("", response_model=PaginatedResponse[MemberResponse])
 async def member_directory(
     db: DbSession,
     current_user: CurrentUser,

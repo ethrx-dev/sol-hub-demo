@@ -39,7 +39,7 @@ async def _can_manage_milestones(db: DbSession, project_id: uuid.UUID, user_id: 
     return False
 
 
-@router.post("/", response_model=MilestoneResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MilestoneResponse, status_code=status.HTTP_201_CREATED)
 async def create_milestone(
     project_id: uuid.UUID,
     body: MilestoneCreateRequest,
@@ -62,7 +62,7 @@ async def create_milestone(
     return milestone
 
 
-@router.get("/", response_model=PaginatedResponse[MilestoneResponse])
+@router.get("", response_model=PaginatedResponse[MilestoneResponse])
 async def list_milestones(
     project_id: uuid.UUID,
     db: DbSession,
@@ -70,6 +70,8 @@ async def list_milestones(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
+    if not await _can_manage_milestones(db, project_id, current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view milestones for this project")
     await _get_project_or_404(db, project_id)
     total = await db.scalar(
         select(func.count(Milestone.id)).where(Milestone.project_id == project_id)

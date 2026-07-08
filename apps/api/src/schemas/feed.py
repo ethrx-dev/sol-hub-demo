@@ -1,11 +1,12 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from .common import BaseResponseWithUUID
 
 
 class CreatePostRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=10000)
     media_urls: list[str] = []
+    privacy: str = "public"
 
 
 class CommentResponse(BaseResponseWithUUID):
@@ -16,12 +17,23 @@ class CommentResponse(BaseResponseWithUUID):
     author_avatar: str | None = None
     content: str
     created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
 
 class CreateCommentRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=5000)
+
+
+class UpdatePostRequest(BaseModel):
+    content: str | None = Field(None, max_length=10000)
+    media_urls: list[str] | None = None
+    privacy: str | None = None
+
+
+class UpdateCommentRequest(BaseModel):
+    content: str = Field(max_length=5000)
 
 
 class PostResponse(BaseResponseWithUUID):
@@ -35,6 +47,7 @@ class PostResponse(BaseResponseWithUUID):
     comment_count: int = 0
     is_liked: bool = False
     is_deleted: bool = False
+    privacy: str = "public"
     created_at: datetime | None = None
     updated_at: datetime | None = None
     comments: list[CommentResponse] = []

@@ -1,6 +1,10 @@
+import json
 import uuid
+import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select
 
 from src.database import async_session
@@ -16,13 +20,42 @@ from src.models.message import Message
 router = APIRouter()
 
 
+async def _ws_notify_members(db, project, sender_id, sender_name):
+    other_ids = []
+    if project.innovator_id != sender_id:
+        other_ids.append(project.innovator_id)
+    match_result = await db.execute(
+        select(Match).where(Match.project_id == project.id, Match.status == "accepted")
+    )
+    for m in match_result.scalars().all():
+        for mid in [m.mentor_id, m.investor_id]:
+            if mid and mid != sender_id:
+                other_ids.append(mid)
+    for uid in set(other_ids):
+        await create_notification(
+            db, str(uid), "New Message",
+            f"{sender_name} sent a message in \"{project.title}\"",
+            notification_type="message",
+        )
+        u = await db.get(User, uid)
+        if u:
+            await send_message_notification(u.email, sender_name, project.title)
+
+
 @router.websocket("/api/ws/workspace/{project_id}")
-async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query(...)):
-    user_id = None
+async def workspace_ws(websocket: WebSocket, project_id: str):
+    subprotocols = websocket.headers.get("sec-websocket-protocol", "")
+    token = subprotocols.split(",")[0].strip() if subprotocols else None
+
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     try:
         payload = decode_token(token)
         user_id = payload.get("sub")
     except Exception:
+        logger.warning("WebSocket auth failed", exc_info=True)
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
@@ -31,24 +64,22 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
         return
 
     try:
+        pid = uuid.UUID(project_id)
         uid = uuid.UUID(user_id)
     except (ValueError, TypeError):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
     async with async_session() as db:
-        project = await db.execute(
-            select(Project).where(Project.id == project_id, Project.is_deleted == False)
-        )
-        project = project.scalar_one_or_none()
-        if not project:
+        project = await db.get(Project, pid)
+        if not project or project.is_deleted:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
         if project.innovator_id != uid:
             match_result = await db.execute(
                 select(Match).where(
-                    Match.project_id == project_id,
+                    Match.project_id == pid,
                     Match.status == "accepted",
                 )
             )
@@ -69,7 +100,6 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
 
         while True:
             raw = await websocket.receive_text()
-            import json
             msg = json.loads(raw)
 
             if msg.get("event") == "ping":
@@ -84,20 +114,17 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
                 continue
 
             async with async_session() as db:
-                user = await db.get(User, user_id)
+                user = await db.get(User, uid)
                 if not user:
                     continue
 
-                project = await db.execute(
-                    select(Project).where(Project.id == project_id, Project.is_deleted == False)
-                )
-                project = project.scalar_one_or_none()
-                if not project:
+                project = await db.get(Project, pid)
+                if not project or project.is_deleted:
                     continue
 
                 msg_obj = Message(
-                    project_id=project_id,
-                    sender_id=user_id,
+                    project_id=pid,
+                    sender_id=uid,
                     content=content,
                 )
                 db.add(msg_obj)
@@ -105,8 +132,8 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
 
                 payload = {
                     "id": str(msg_obj.id),
-                    "project_id": str(project_id),
-                    "sender_id": str(user_id),
+                    "project_id": project_id,
+                    "sender_id": str(uid),
                     "sender_name": user.full_name,
                     "content": content,
                     "is_read": False,
@@ -114,34 +141,12 @@ async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query
                 }
 
                 await manager.broadcast(room, "message:new", payload)
-
-                # Notify other workspace members
-                other_ids = []
-                if project.innovator_id != user_id:
-                    other_ids.append(project.innovator_id)
-                match_result = await db.execute(
-                    select(Match).where(Match.project_id == project_id, Match.status == "accepted")
-                )
-                for m in match_result.scalars().all():
-                    for mid in [m.mentor_id, m.investor_id]:
-                        if mid and mid != user_id:
-                            other_ids.append(mid)
-
-                for uid in set(other_ids):
-                    await create_notification(
-                        db, str(uid), "New Message",
-                        f"{user.full_name} sent a message in \"{project.title}\"",
-                        notification_type="message",
-                    )
-                    u = await db.get(User, uid)
-                    if u:
-                        await send_message_notification(u.email, user.full_name, project.title)
-
+                await _ws_notify_members(db, project, uid, user.full_name)
                 await db.commit()
 
     except WebSocketDisconnect:
         pass
     except Exception:
-        pass
+        logger.error("WebSocket message handler error", exc_info=True)
     finally:
         await manager.leave(room, websocket)

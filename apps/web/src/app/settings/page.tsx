@@ -1,21 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar";
 import { useAuth } from "@/src/lib/auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/src/lib/api-client";
-import { Loader2 } from "lucide-react";
-import { VideoUpload } from "@/src/components/shared/video-upload";
-import { ErrorBoundary } from "@/src/components/shared/error-boundary";
+import { Loader2, Upload } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated, refreshUser } = useAuth();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
   const [profile, setProfile] = useState({
     fullName: user?.full_name || "",
     email: user?.email || "",
@@ -65,6 +84,13 @@ export default function SettingsPage() {
     try {
       await api.patch("/users/me", { full_name: profile.fullName, email: profile.email });
       toast.success("Profile updated");
+      const dashPaths: Record<string, string> = {
+        admin: "/admin",
+        innovator: "/innovator/projects",
+        mentor: "/mentor/browse",
+        investor: "/investor/browse",
+      };
+      router.push(dashPaths[user?.role || ""] || "/");
     } catch {
       toast.error("Failed to update profile");
     } finally {
@@ -93,6 +119,48 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/users/me/avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      toast.success("Avatar updated");
+      await refreshUser();
+    } catch {
+      toast.error("Failed to upload avatar");
+    } finally {
+      setAvatarUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   const handleNotifSave = async () => {
     setSaving(true);
     try {
@@ -114,7 +182,6 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="media">Media</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
@@ -124,7 +191,39 @@ export default function SettingsPage() {
               <CardTitle>Profile</CardTitle>
               <CardDescription>Update your personal information</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={user?.avatar_url || ""} alt={user?.full_name || ""} />
+                  <AvatarFallback className="text-lg">
+                    {(user?.full_name || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={avatarUploading}
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    {avatarUploading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Upload Photo
+                  </Button>
+                  <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, WebP. Max 5MB.</p>
+                </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
               <form onSubmit={handleProfileSave} className="space-y-4">
                 <Input
                   label="Full Name"
@@ -264,23 +363,6 @@ export default function SettingsPage() {
                   </Button>
                 </>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="media" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Media</CardTitle>
-              <CardDescription>Upload your profile picture and intro video</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ErrorBoundary>
-                <VideoUpload
-                  currentUrl={user?.avatar_url}
-                  onUploaded={() => {}}
-                />
-              </ErrorBoundary>
             </CardContent>
           </Card>
         </TabsContent>

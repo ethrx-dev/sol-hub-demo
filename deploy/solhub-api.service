@@ -1,0 +1,26 @@
+[Unit]
+Description=SOL Hub API Server
+After=docker.service postgres.service redis.service
+Wants=postgres.service redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/sol-hub/apps/api
+ExecStart=/usr/local/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+Environment=DATABASE_URL=postgresql+asyncpg://solhub:solhub_dev@localhost:5432/solhub
+Environment=REDIS_URL=redis://localhost:6379/0
+Environment=S3_ENDPOINT=http://localhost:9000
+Environment=S3_PUBLIC_URL=http://localhost:9000
+Environment=S3_ACCESS_KEY=minioadmin
+Environment=S3_SECRET_KEY=minioadmin
+Environment=SECRET_KEY=change-this-in-production
+Environment=ENVIRONMENT=production
+
+[Install]
+WantedBy=multi-user.target

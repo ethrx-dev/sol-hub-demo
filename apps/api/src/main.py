@@ -1,19 +1,34 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import settings
 from src.middleware.security import SecurityHeadersMiddleware
 from src.middleware.rate_limit import add_rate_limit_middleware
+
+logger = logging.getLogger(__name__)
+
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if settings.ENVIRONMENT != "development" and request.headers.get("x-forwarded-proto") == "http":
+            url = request.url.replace(scheme="https")
+            from starlette.responses import RedirectResponse
+            return RedirectResponse(url, status_code=307)
+        return await call_next(request)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT != "development" and settings.SECRET_KEY in ("dev-secret", "change-this-to-a-random-secret", ""):
         raise RuntimeError("SECRET_KEY must be set to a strong random value in non-development environments")
+    if settings.ENVIRONMENT != "development" and (settings.S3_ACCESS_KEY == "minioadmin" or settings.S3_SECRET_KEY == "minioadmin"):
+        raise RuntimeError("S3 credentials must be changed from default values in non-development environments")
     yield
 
 
@@ -23,20 +38,23 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+app.router.redirect_slashes = False
 
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+add_rate_limit_middleware(app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Secret"],
 )
-app.add_middleware(SecurityHeadersMiddleware)
-add_rate_limit_middleware(app)
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled server error: %s", exc)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},
@@ -56,7 +74,9 @@ async def healthcheck():
     return {"status": "ok", "service": "sol-hub-api"}
 
 
-from src.routers import routers
+from src.routers.feature_registry import get_enabled_routers
+
+routers = get_enabled_routers()
 
 for r in routers:
     app.include_router(r)

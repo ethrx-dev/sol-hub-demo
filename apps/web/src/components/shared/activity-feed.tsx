@@ -2,23 +2,26 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, Send, Globe, Users, Lock, PenLine, Trash2, X, Check } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { api } from "@/src/lib/api-client";
+import { useAuth } from "@/src/lib/auth";
 import { toast } from "sonner";
 
 interface Post {
   id: string;
   authorName: string;
   authorAvatar?: string;
+  authorId: string;
   content: string;
   media?: string[];
   likes: number;
   comments: number;
   liked: boolean;
   createdAt: string;
+  privacy?: string;
 }
 
 interface ActivityFeedProps {
@@ -37,6 +40,8 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
   const [commentOpen, setCommentOpen] = useState<Record<string, boolean>>({});
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+  const [editingPost, setEditingPost] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastPostRef = useCallback(
@@ -76,6 +81,8 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
     }
   };
 
+  const { user } = useAuth();
+
   const handleComment = async (postId: string) => {
     const text = commentText[postId]?.trim();
     if (!text) return;
@@ -91,6 +98,43 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
       toast.error("Failed to post comment");
     } finally {
       setSubmitting((prev) => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const startEdit = (post: Post) => {
+    setEditingPost(post.id);
+    setEditContent(post.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingPost(null);
+    setEditContent("");
+  };
+
+  const saveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+    try {
+      await api.patch(`/feed/posts/${postId}`, { content: editContent.trim() });
+      setLocalPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, content: editContent.trim() } : p))
+      );
+      toast.success("Post updated");
+      cancelEdit();
+    } catch {
+      toast.error("Failed to update post");
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, postId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Delete this post?")) return;
+    try {
+      await api.delete(`/feed/posts/${postId}`);
+      setLocalPosts((prev) => prev.filter((p) => p.id !== postId));
+      toast.success("Post deleted");
+    } catch {
+      toast.error("Failed to delete post");
     }
   };
 
@@ -129,38 +173,101 @@ export function ActivityFeed({ posts, loadMore, hasMore, loading }: ActivityFeed
           ref={index === localPosts.length - 1 ? lastPostRef : null}
           className="rounded-lg border bg-background p-4"
         >
-          <Link href={`/hub/feed/${post.id}`} className="block">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={post.authorAvatar} />
-                <AvatarFallback>
-                  {post.authorName.split(" ").map((n) => n[0]).join("")}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">{post.authorName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatTimeAgo(post.createdAt)}
-                </p>
+          <div className="flex items-start justify-between gap-2">
+            <Link href={`/hub/feed/${post.id}`} className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={post.authorAvatar} />
+                  <AvatarFallback>
+                    {post.authorName.split(" ").map((n) => n[0]).join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{post.authorName}</p>
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {formatTimeAgo(post.createdAt)}
+                    {post.privacy === "connections_only" && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                        <Users className="h-2.5 w-2.5" />
+                        Connections
+                      </span>
+                    )}
+                    {post.privacy === "private" && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">
+                        <Lock className="h-2.5 w-2.5" />
+                        Private
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <p className="mt-3 text-sm">{post.content}</p>
-
-            {post.media && post.media.length > 0 && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {post.media.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt=""
-                    className="rounded-md object-cover"
-                    loading="lazy"
-                  />
-                ))}
+            </Link>
+            {user?.id === post.authorId && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(post); }}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  title="Edit post"
+                >
+                  <PenLine className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={(e) => handleDelete(e, post.id)}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive transition-colors"
+                  title="Delete post"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             )}
-          </Link>
+          </div>
+
+          {editingPost === post.id ? (
+            <div className="mt-3 space-y-2">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full rounded-md border border-input bg-background p-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => saveEdit(post.id)}
+                  disabled={!editContent.trim()}
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Save
+                </button>
+                <button
+                  onClick={cancelEdit}
+                  className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link href={`/hub/feed/${post.id}`} className="block">
+              <p className="mt-3 text-sm">{post.content}</p>
+
+              {post.media && post.media.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {post.media.map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt=""
+                      className="rounded-md object-cover"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              )}
+            </Link>
+          )}
 
           <div className="mt-4 flex items-center gap-4">
             <button

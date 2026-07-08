@@ -10,14 +10,14 @@
 
 The codebase demonstrates strong security fundamentals in several areas: bcrypt password hashing, magic-byte file validation, UUID-renamed uploads, parameterized SQLAlchemy queries, explicit CORS origins, comprehensive security headers, rate limiting on auth endpoints, and a global exception handler that prevents stack trace leakage.
 
-All **3 critical vulnerabilities** have been remediated. Of the 5 high-severity issues, all 5 have been fixed. Of the 6 medium-severity issues, 3 have been fixed (M2, M3, M6).
+All **3 critical vulnerabilities**, all **5 high-severity issues**, and all **6 medium-severity issues** have been remediated. Of the 4 low-severity issues, 3 have been fixed. One low-severity finding (L4: localStorage tokens) remains open as it requires a significant auth architecture refactor and is partially mitigated by strict CSP headers.
 
 | Severity | Total | Fixed | Open |
 |----------|-------|-------|------|
 | CRITICAL | 3 | 3 | 0 |
 | HIGH | 5 | 5 | 0 |
-| MEDIUM | 6 | 3 | 3 |
-| LOW | 4 | 0 | 4 |
+| MEDIUM | 6 | 6 | 0 |
+| LOW | 4 | 3 | 1 |
 
 ---
 
@@ -244,17 +244,18 @@ The Stripe webhook handler previously did not track processed event IDs. If Stri
 
 ## MEDIUM Findings
 
-### M1. WebSocket Token Passed in URL Query Parameter
+### M1. WebSocket Token Passed in URL Query Parameter — RESOLVED
 
-**File:** `apps/api/src/routers/workspace_ws.py:18`
+**File:** `apps/api/src/routers/workspace_ws.py:18` (original)
+**Status:** FIXED June 29, 2026
 
-```python
-async def workspace_ws(websocket: WebSocket, project_id: str, token: str = Query(...)):
-```
+The JWT token was passed as `?token=...` in the WebSocket URL. URLs are logged by reverse proxies, access logs, and may appear in browser history.
 
-The JWT token is passed as `?token=...` in the WebSocket URL. URLs are logged by reverse proxies, access logs, and may appear in browser history.
-
-**Remediation:** Pass the token in the `Sec-WebSocket-Protocol` header or as the first message after connection. Alternatively, use a short-lived WebSocket-specific token exchanged via an authenticated REST call.
+**Remediation applied:**
+- Changed backend `workspace_ws()` to read the token from the `Sec-WebSocket-Protocol` header instead of the `token` query parameter
+- Removed `token: str = Query(...)` from function signature
+- Changed frontend `use-workspace-ws.ts` to pass the token as the second argument to the WebSocket constructor: `new WebSocket(url, [token])` instead of appending `?token=${token}` to the URL
+- Also moved the inline `import json` inside the message loop to a top-level import (was repeated on every message)
 
 ---
 
@@ -285,21 +286,29 @@ class RegisterRequest(BaseModel):
 
 ---
 
-### M4. Membership Tier Not Enforced
+### M4. Membership Tier Not Enforced — RESOLVED
 
-No endpoint checks `current_user.membership_tier` before allowing actions. Free-tier users can create unlimited projects, groups, posts, and access all features identical to paid tiers.
+**Status:** FIXED June 29, 2026
 
-**Remediation:** Add tier-based feature gating in relevant endpoints (e.g., limit project creation to `innovator+` tiers, limit group creation to paid tiers).
+No endpoint checked `current_user.membership_tier` before allowing actions. Free-tier users could create unlimited projects, groups, posts, and access all features identical to paid tiers.
+
+**Remediation applied:**
+- Added membership tier check to `POST /api/projects/` (`projects.py:24`): returns 403 if `membership_tier == "free"` and user is not admin
+- Added membership tier check to `POST /api/groups/` (`groups.py:20`): returns 403 if `membership_tier == "free"` and user is not admin
+- Admins are exempt from tier checks
 
 ---
 
-### M5. Draft Projects Visible to All Authenticated Users
+### M5. Draft Projects Visible to All Authenticated Users — RESOLVED
 
 **File:** `apps/api/src/routers/projects.py:85-93`
+**Status:** FIXED June 29, 2026
 
-`GET /api/projects/{project_id}` returns any non-deleted project regardless of status. Draft projects are visible to all authenticated users, not just the owner.
+`GET /api/projects/{project_id}` previously returned any non-deleted project regardless of status. Draft projects were visible to all authenticated users, not just the owner.
 
-**Remediation:** If `project.status == "draft"`, require `current_user.id == project.innovator_id` or `current_user.role == "admin"`.
+**Remediation applied:**
+- Added check in `get_project()` (`projects.py:95-96`): if `project.status == "draft"`, only return the project if `current_user.id == project.innovator_id` or `current_user.role == "admin"`
+- Unauthorized users receive a 404 (not 403) to avoid leaking the project's existence
 
 ---
 
@@ -318,42 +327,42 @@ Two S3 upload implementations existed:
 
 ## LOW Findings
 
-### L1. Frontend Dependencies Use Caret Ranges
+### L1. Frontend Dependencies Use Caret Ranges — RESOLVED
 
 **File:** `apps/web/package.json`
+**Status:** FIXED June 29, 2026
 
-All dependencies use `^` (caret ranges) instead of exact pinning. The project's security rules state: "Pin exact versions in package.json (no ^ or ~ in production)."
+All dependencies used `^` (caret ranges) instead of exact pinning. The project's security rules state: "Pin exact versions in package.json (no ^ or ~ in production)."
 
-The `pnpm-lock.yaml` lockfile exists and mitigates this, but `package.json` itself should be pinned for production deployments.
+**Remediation applied:**
+- Removed all `^` prefixes from dependency versions in `apps/web/package.json`
+- All dependencies are now pinned to exact versions (e.g., `"next": "15.2.0"` instead of `"next": "^15.2.0"`)
 
 ---
 
-### L2. S3 Credentials Default to `minioadmin`
+### L2. S3 Credentials Default to `minioadmin` — RESOLVED
 
 **File:** `apps/api/src/config.py:14-15`
+**Status:** FIXED June 29, 2026
 
-```python
-S3_ACCESS_KEY: str = "minioadmin"
-S3_SECRET_KEY: str = "minioadmin"
-```
+If deployed without overriding, the default MinIO credentials (`minioadmin`/`minioadmin`) are used. These are publicly known defaults.
 
-If deployed without overriding, the default MinIO credentials are used. These are publicly known defaults.
-
-**Remediation:** Add a startup check that refuses to boot if S3 credentials are `minioadmin` and `ENVIRONMENT != "development"`.
+**Remediation applied:**
+- Added startup check in `main.py` lifespan handler: refuses to boot if `S3_ACCESS_KEY == "minioadmin"` or `S3_SECRET_KEY == "minioadmin"` and `ENVIRONMENT != "development"`
+- Mirrors the existing SECRET_KEY startup guard pattern
 
 ---
 
-### L3. Admin Seed Key Is a Placeholder
+### L3. Admin Seed Key Is a Placeholder — RESOLVED
 
 **File:** `apps/api/.env`
+**Status:** FIXED June 29, 2026
 
-```
-ADMIN_SEED_KEY=super-secret-admin-key-change-me
-```
+The admin seeding endpoint (`POST /api/admin/seed`) uses this key to authorize creating the first admin. The placeholder value was easily guessable.
 
-The admin seeding endpoint (`POST /api/admin/seed`) uses this key to authorize creating the first admin. The placeholder value is easily guessable.
-
-**Remediation:** Replace with a cryptographically random value before any deployment. The seed endpoint can only be used once (existing admin check), but the key should still be strong.
+**Remediation applied:**
+- Generated a cryptographically random 64-byte key via `openssl rand -base64 48`
+- Updated `apps/api/.env` with the new strong key
 
 ---
 
@@ -408,15 +417,15 @@ JWT tokens are stored in `localStorage`, which is accessible to any JavaScript r
 | ~~P1~~ | ~~H3: Add file size limit~~ | ~~15 min~~ | **FIXED** |
 | ~~P1~~ | ~~H4: Guard demo mode with `ENVIRONMENT` check~~ | ~~10 min~~ | **FIXED** |
 | ~~P2~~ | ~~H5: Add webhook idempotency table~~ | ~~30 min~~ | **FIXED** |
-| **P2 — Fix soon** | M1: Move WS token from query param to header | 20 min | Open |
+| ~~P2~~ | ~~M1: Move WS token from query param to header~~ | ~~20 min~~ | **FIXED** |
 | ~~P2~~ | ~~M2: Add password min length~~ | ~~5 min~~ | **FIXED** |
 | ~~P2~~ | ~~M3: Make `CORS_ORIGINS` env-configurable~~ | ~~10 min~~ | **FIXED** |
-| **P3 — Backlog** | M4: Membership tier enforcement | Medium | Open |
-| **P3 — Backlog** | M5: Draft project visibility | 15 min | Open |
+| ~~P3~~ | ~~M4: Membership tier enforcement~~ | ~~Medium~~ | **FIXED** |
+| ~~P3~~ | ~~M5: Draft project visibility~~ | ~~15 min~~ | **FIXED** |
 | ~~P3~~ | ~~M6: Delete `file.py` dead code~~ | ~~2 min~~ | **FIXED** |
-| **P3 — Backlog** | L1: Pin frontend dependency versions | 10 min | Open |
-| **P3 — Backlog** | L2: S3 credential startup check | 10 min | Open |
-| **P3 — Backlog** | L3: Admin seed key placeholder | 2 min | Open |
+| ~~P3~~ | ~~L1: Pin frontend dependency versions~~ | ~~10 min~~ | **FIXED** |
+| ~~P3~~ | ~~L2: S3 credential startup check~~ | ~~10 min~~ | **FIXED** |
+| ~~P3~~ | ~~L3: Admin seed key placeholder~~ | ~~2 min~~ | **FIXED** |
 | **P3 — Backlog** | L4: Migrate from localStorage to httpOnly cookies | High effort | Open |
 
 ---
@@ -437,6 +446,15 @@ JWT tokens are stored in `localStorage`, which is accessible to any JavaScript r
 | June 29, 2026 | M2 fixed: Added `min_length=8` to all password fields in auth schemas |
 | June 29, 2026 | M3 fixed: Changed `CORS_ORIGINS` from `@property` to env-configurable `List[str]` field |
 | June 29, 2026 | M6 fixed: Deleted dead code `apps/api/src/utils/file.py` |
+| June 29, 2026 | M1 fixed: Moved WS token from query param to `Sec-WebSocket-Protocol` header (backend + frontend) |
+| June 29, 2026 | M4 fixed: Added membership tier enforcement to project creation and group creation endpoints |
+| June 29, 2026 | M5 fixed: Draft projects now return 404 for non-owner/non-admin users |
+| June 29, 2026 | L1 fixed: Pinned all frontend dependency versions in `apps/web/package.json` |
+| June 29, 2026 | L2 fixed: Added S3 credential startup check in `main.py` lifespan |
+| June 29, 2026 | L3 fixed: Generated strong `ADMIN_SEED_KEY` in `apps/api/.env` |
+| July 7, 2026  | Email system hardened: async Resend wrapper with `asyncio.to_thread`; dev/prod mode guard (logs in dev, sends in prod); `NOTIFICATION_EMAIL` config; eliminated silent failure in pillar email notification |
+| July 7, 2026  | Membership gates: removed from gallery media upload, event creation — any authenticated user can upload to own albums and create events |
+| July 7, 2026  | Contact form: added admin notification + user confirmation via shared email pipeline |
 
 ---
 

@@ -20,6 +20,16 @@ from src.models.password_reset_token import PasswordResetToken
 from src.models.group_message import GroupMessage
 from src.models.verification_token import VerificationToken
 from src.models.webhook_event import WebhookEvent
+from src.models.connection import Connection
+from src.models.forum import ForumCategory, ForumThread, ForumReply
+from src.models.event import Event, EventAttendee
+from src.models.gallery import Album, AlbumMedia
+from src.models.doc_library import DocCategory, DocLibraryItem
+from src.models.blog import BlogCategory, BlogPost
+from src.models.activity import ActivityLog
+from src.models.moderation import Report, Block
+from src.models.pillar_submission import PillarSubmission
+from src.models.page import Page, PageRevision, Media
 
 __all__ = [
     "User",
@@ -42,4 +52,23 @@ __all__ = [
     "GroupMessage",
     "VerificationToken",
     "WebhookEvent",
+    "Connection",
+    "ForumCategory",
+    "ForumThread",
+    "ForumReply",
+    "Event",
+    "EventAttendee",
+    "Album",
+    "AlbumMedia",
+    "DocCategory",
+    "DocLibraryItem",
+    "BlogCategory",
+    "BlogPost",
+    "ActivityLog",
+    "Report",
+    "Block",
+    "PillarSubmission",
+    "Page",
+    "PageRevision",
+    "Media",
 ]

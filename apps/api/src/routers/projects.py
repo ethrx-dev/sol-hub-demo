@@ -16,10 +16,12 @@ from src.utils.storage import upload_file
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
-@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(body: ProjectCreateRequest, db: DbSession, current_user: CurrentUser):
     if current_user.role not in ("innovator", "admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only innovators can create projects")
+    if current_user.membership_tier == "free" and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project creation requires a paid membership tier")
 
     project = Project(
         innovator_id=current_user.id,
@@ -42,7 +44,7 @@ async def create_project(body: ProjectCreateRequest, db: DbSession, current_user
     return project
 
 
-@router.get("/", response_model=PaginatedResponse[ProjectResponse])
+@router.get("", response_model=PaginatedResponse[ProjectResponse])
 async def list_projects(
     db: DbSession,
     current_user: CurrentUser,
@@ -89,6 +91,8 @@ async def get_project(project_id: uuid.UUID, db: DbSession, current_user: Curren
     )
     project = result.scalar_one_or_none()
     if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if project.status == "draft" and project.innovator_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return project
 

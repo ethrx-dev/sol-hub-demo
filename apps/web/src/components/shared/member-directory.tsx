@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, UserPlus, UserCheck } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Badge } from "@/src/components/ui/badge";
 import { Card, CardContent } from "@/src/components/ui/card";
+import { FollowButton } from "@/src/components/shared/follow-button";
 import {
   Select,
   SelectContent,
@@ -150,10 +151,15 @@ export function MemberDirectory({ members, loading }: MemberDirectoryProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">{member.fullName}</h3>
-                        <Badge variant="secondary" className="mt-1 capitalize">
-                          {member.role}
-                        </Badge>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold truncate">{member.fullName}</h3>
+                            <Badge variant="secondary" className="mt-1 capitalize">
+                              {member.role}
+                            </Badge>
+                          </div>
+                          <FollowButton userId={member.id} />
+                        </div>
                         <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                           {member.headline}
                         </p>

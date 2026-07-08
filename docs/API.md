@@ -38,8 +38,8 @@ This only works once — subsequent calls return `409 Conflict`. Requires `ADMIN
 
 | Group         | Prefix               | Description                            |
 |---------------|----------------------|----------------------------------------|
-| Auth          | `/api/auth`          | Register, login, refresh, logout, password reset, me |
-| Users         | `/api/users`         | Profile CRUD, onboarding               |
+| Auth          | `/api/auth`          | Register, login, refresh, logout, password reset, verify email, me |
+| Users         | `/api/users`         | Profile CRUD, onboarding, avatar, video, notification-preferences |
 | Projects      | `/api/projects`      | Project CRUD, submit, milestones       |
 | Matches       | `/api/matches`       | List, create, accept/decline           |
 | Investments   | `/api/investments`   | Commit, list, financial report         |
@@ -51,12 +51,23 @@ This only works once — subsequent calls return `409 Conflict`. Requires `ADMIN
 | Resources     | `/api/resources`     | Resource library CRUD                  |
 | Notifications | `/api/notifications` | User notification management           |
 | Milestones    | `/api/projects/{id}/milestones` | Create, list project milestones       |
+| Events        | `/api/events`        | CRUD, RSVP, list upcoming/past         |
+| Galleries     | `/api/galleries`     | Albums CRUD, album media, media upload, feed-media |
+| Blog          | `/api/blog`          | Posts CRUD, categories, public listing |
+| Forums        | `/api/forums`        | Categories, threads, replies           |
+| Connections   | `/api/connections`   | Follow/unfollow, list followers/following |
+| Activity      | `/api/activity`      | Timeline feed                          |
+| Search        | `/api/search`        | Global search across entities          |
+| Contact       | `/api/contact`       | Contact form submission                |
+| Doc Library   | `/api/doc-library`   | Document CRUD                          |
+| Pillars       | `/api/pillars`       | Video submissions (innovators, mentors, investors) |
+| Pages         | `/api/pages`         | CMS page CRUD                          |
+| Moderation    | `/api/moderation`    | Report content, block users            |
 | Membership    | `/api/membership`    | Plans, Stripe checkout, webhooks       |
 | Media         | `/api/media`         | File upload (images, documents)         |
-| Users/Me      | `/api/users/me`      | Profile, avatar, video, notification-preferences |
 | Workspace     | `/api/projects/{id}/workspace` | Documents, messages          |
-| Workspace WS  | `ws://.../api/ws/workspace/{id}?token=` | Real-time messaging     |
-| Admin         | `/api/admin`         | Seed, stats, users, projects, matches, groups, posts, resources |
+| Workspace WS  | `ws://.../api/ws/workspace/{id}` | Real-time messaging (token in `Sec-WebSocket-Protocol`) |
+| Admin         | `/api/admin`         | Seed, stats, users, projects, matches, groups, posts, resources, media, pages, pricing, blog, pillar-submissions, reports |
 
 ---
 
@@ -155,6 +166,135 @@ curl -X POST http://localhost:8000/api/projects/ \
     "budget_breakdown": {}
   }'
 ```
+
+### Contact Form
+
+```bash
+curl -X POST http://localhost:8000/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "subject": "Partnership inquiry",
+    "message": "I would like to partner with SOL Hub..."
+  }'
+```
+
+Sends admin notification + confirmation email (if `RESEND_API_KEY` is set).
+
+### Events
+
+```bash
+# List upcoming events
+curl "http://localhost:8000/api/events?upcoming=true&limit=20"
+
+# Create event (requires auth)
+curl -X POST http://localhost:8000/api/events \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Demo Day",
+    "description": "Showcase your project",
+    "start_time": "2026-08-15T14:00:00Z",
+    "end_time": "2026-08-15T17:00:00Z",
+    "location": "123 Main St",
+    "is_virtual": false,
+    "max_attendees": 50,
+    "status": "published"
+  }'
+
+# RSVP to an event
+curl -X POST http://localhost:8000/api/events/{event_id}/rsvp \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "going"}'
+```
+
+### Galleries (Albums)
+
+```bash
+# Create album
+curl -X POST http://localhost:8000/api/galleries/albums \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Community Meetup", "description": "Photos from the event", "album_type": "photo"}'
+
+# Upload media to album (multipart)
+curl -X POST http://localhost:8000/api/galleries/albums/{album_id}/media/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@photo.jpg"
+
+# List albums
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/galleries/albums?limit=20"
+
+# Get album detail (with media)
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/galleries/albums/{album_id}"
+```
+
+### Blog
+
+```bash
+# List published posts
+curl "http://localhost:8000/api/blog/posts?limit=10"
+
+# Get blog post
+curl "http://localhost:8000/api/blog/posts/{post_id}"
+
+# Create post (admin only)
+curl -X POST http://localhost:8000/api/admin/blog/posts \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My Blog Post",
+    "content": "Full markdown content...",
+    "excerpt": "Short summary",
+    "published": true
+  }'
+```
+
+### Forums
+
+```bash
+# List categories
+curl "http://localhost:8000/api/forums/categories"
+
+# List threads in a category
+curl "http://localhost:8000/api/forums/categories/{category_id}/threads"
+
+# Create thread
+curl -X POST http://localhost:8000/api/forums/categories/{category_id}/threads \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Discussion topic", "content": "Let me start..."}'
+
+# Reply to thread
+curl -X POST http://localhost:8000/api/forums/threads/{thread_id}/replies \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Great point!"}'
+```
+
+### Global Search
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:8000/api/search?q=climate&limit=20"
+```
+
+Searches across: projects, users, posts, groups, resources, and events.
+
+### Pillar Video Submissions
+
+```bash
+# Submit a video introduction for a pillar
+curl -X POST http://localhost:8000/api/pillars/{pillar}/submit \
+  -H "Authorization: Bearer <token>" \
+  -F "video=@intro.mp4"
+```
+
+Pillar values: `innovators`, `mentors`, `investors`
 
 ### Admin: List Users
 
@@ -360,10 +500,18 @@ Auth endpoints are rate-limited via slowapi:
 Workspace messaging uses WebSocket at:
 
 ```
-ws://localhost:8000/api/ws/workspace/{project_id}?token={jwt_token}
+ws://localhost:8000/api/ws/workspace/{project_id}
+```
+
+The JWT token is passed via the `Sec-WebSocket-Protocol` header (not as a URL query parameter):
+
+```javascript
+const ws = new WebSocket(url, [token]);
 ```
 
 Messages are JSON with `type`, `sender_id`, `sender_name`, `content`, and `timestamp` fields.
+
+Only authorized workspace participants (project owner, accepted mentor/investor) can connect.
 
 ## Schema Conventions
 
