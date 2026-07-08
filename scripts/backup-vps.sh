@@ -59,7 +59,7 @@ if [ -n "$MINIO_CONTAINER" ]; then
   if docker exec "$MINIO_CONTAINER" sh -c "
     mc alias delete local 2>/dev/null || true
     mc alias set local http://localhost:9000 ${S3_ACCESS_KEY:-minioadmin} ${S3_SECRET_KEY:-minioadmin} >/dev/null 2>&1
-    mc mb local/${S3_BUCKET} --ignore-exist >/dev/null 2>&1
+    mc mb local/${S3_BUCKET} --ignore-existing >/dev/null 2>&1
     mc mirror --overwrite local/${S3_BUCKET} /tmp/solhub-minio-snap
   " >/dev/null 2>&1; then
     docker cp "$MINIO_CONTAINER:/tmp/solhub-minio-snap/." "$TMP_DIR/minio/" 2>/dev/null

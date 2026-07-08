@@ -76,7 +76,7 @@ if [ -d "$TMP_DIR/minio" ] && [ "$(find "$TMP_DIR/minio" -type f 2>/dev/null | w
     docker exec "$MINIO_CONTAINER" sh -c "
       mc alias delete local 2>/dev/null || true
       mc alias set local http://localhost:9000 ${S3_ACCESS_KEY:-minioadmin} ${S3_SECRET_KEY:-minioadmin} >/dev/null 2>&1
-      mc mb local/${S3_BUCKET} --ignore-exist >/dev/null 2>&1
+      mc mb local/${S3_BUCKET} --ignore-existing >/dev/null 2>&1
       mc mirror --overwrite /tmp/solhub-minio-restore local/${S3_BUCKET}
     " 2>&1 && echo "  Done: restored to bucket '$S3_BUCKET'" || echo "  WARNING: MinIO restore had errors"
     docker exec "$MINIO_CONTAINER" rm -rf /tmp/solhub-minio-restore
