@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from typing import List
 
 
@@ -33,6 +34,18 @@ class Settings(BaseSettings):
     ENABLED_FEATURES: str = (
         "connections,forums,events,galleries,document_library,blog,reporting"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_default_secrets(cls, values):
+        env = values.get("ENVIRONMENT", "development")
+        if env != "development":
+            sk = values.get("SECRET_KEY", "")
+            if sk in ("dev-secret", "change-this-to-a-random-secret", ""):
+                raise ValueError("SECRET_KEY must be changed from default in non-development environments")
+            if values.get("S3_ACCESS_KEY") == "minioadmin" or values.get("S3_SECRET_KEY") == "minioadmin":
+                raise ValueError("S3 credentials must be changed from default in non-development environments")
+        return values
 
     class Config:
         env_file = ".env"

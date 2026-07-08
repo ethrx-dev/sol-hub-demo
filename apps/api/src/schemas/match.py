@@ -14,6 +14,16 @@ class MatchUpdateRequest(BaseModel):
     status: str
 
 
+class MatchSuggestionResponse(BaseModel):
+    user_id: str
+    full_name: str
+    avatar_url: str | None = None
+    bio: str | None = None
+    skills: list = []
+    sectors_of_interest: list = []
+    score: int = 0
+
+
 class MatchResponse(BaseResponseWithUUID):
     id: str
     project_id: str

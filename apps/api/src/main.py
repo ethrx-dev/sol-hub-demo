@@ -1,13 +1,26 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import settings
 from src.middleware.security import SecurityHeadersMiddleware
 from src.middleware.rate_limit import add_rate_limit_middleware
+
+logger = logging.getLogger(__name__)
+
+
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if settings.ENVIRONMENT != "development" and request.headers.get("x-forwarded-proto") == "http":
+            url = request.url.replace(scheme="https")
+            from starlette.responses import RedirectResponse
+            return RedirectResponse(url, status_code=307)
+        return await call_next(request)
 
 
 @asynccontextmanager
@@ -27,11 +40,12 @@ app = FastAPI(
 )
 app.router.redirect_slashes = False
 
+app.add_middleware(HTTPSRedirectMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 add_rate_limit_middleware(app)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.ENVIRONMENT == "development" else settings.CORS_ORIGINS,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Admin-Secret"],
@@ -40,6 +54,7 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled server error: %s", exc)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},

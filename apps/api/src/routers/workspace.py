@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File
 from sqlalchemy import select, func, or_
+from sqlalchemy.orm import joinedload
 
 from src.deps import DbSession, CurrentUser
 from src.models.project import Project
@@ -23,6 +24,8 @@ from src.utils.file_validator import validate_file, validate_file_size, generate
 from src.utils.storage import upload_file
 
 router = APIRouter(prefix="/api/projects/{project_id}/workspace", tags=["workspace"])
+
+MAX_ACTIVE_WORKSPACES = 5
 
 
 async def _verify_workspace_access(db: DbSession, project_id: uuid.UUID, user_id: uuid.UUID) -> Project:
@@ -49,6 +52,59 @@ async def _verify_workspace_access(db: DbSession, project_id: uuid.UUID, user_id
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No access to workspace")
 
 
+async def _enforce_workspace_capacity(db: DbSession, user_id: uuid.UUID) -> None:
+    my_project_count = await db.scalar(
+        select(func.count(Project.id)).where(
+            Project.innovator_id == user_id,
+            Project.is_deleted == False,
+        )
+    )
+    my_match_count = await db.scalar(
+        select(func.count(Match.id)).where(
+            or_(
+                Match.mentor_id == user_id,
+                Match.investor_id == user_id,
+            ),
+            Match.status == "accepted",
+        )
+    )
+    total = (my_project_count or 0) + (my_match_count or 0)
+    if total >= MAX_ACTIVE_WORKSPACES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Workspace capacity reached (max {MAX_ACTIVE_WORKSPACES} active). Complete or withdraw from existing projects first.",
+        )
+
+
+async def _notify_workspace_members(
+    db: DbSession,
+    project: Project,
+    sender_id: uuid.UUID,
+    sender_name: str,
+    current_user_id: uuid.UUID,
+):
+    other_members = []
+    if project.innovator_id != current_user_id:
+        other_members.append(project.innovator_id)
+    match_result = await db.execute(
+        select(Match).where(Match.project_id == project.id, Match.status == "accepted")
+    )
+    for m in match_result.scalars().all():
+        for mid in [m.mentor_id, m.investor_id]:
+            if mid and mid != current_user_id:
+                other_members.append(mid)
+
+    for uid in set(other_members):
+        await create_notification(
+            db, str(uid), "New Message",
+            f"{sender_name} sent a message in \"{project.title}\"",
+            notification_type="message",
+        )
+        u = await db.get(User, uid)
+        if u:
+            await send_message_notification(u.email, sender_name, project.title)
+
+
 @router.get("", response_model=WorkspaceResponse)
 async def get_workspace(project_id: uuid.UUID, db: DbSession, current_user: CurrentUser):
     project = await _verify_workspace_access(db, project_id, current_user.id)
@@ -66,23 +122,19 @@ async def get_workspace(project_id: uuid.UUID, db: DbSession, current_user: Curr
     )
     messages = msgs_result.scalars().all()
 
-    members = []
-    innovator_result = await db.execute(select(User).where(User.id == project.innovator_id))
-    innovator = innovator_result.scalar_one()
-    members.append({"id": str(innovator.id), "full_name": innovator.full_name, "role": "innovator", "avatar_url": innovator.avatar_url})
+    innovator = await db.get(User, project.innovator_id)
+    members = [{"id": str(innovator.id), "full_name": innovator.full_name, "role": "innovator", "avatar_url": innovator.avatar_url}]
 
     match_result = await db.execute(
-        select(Match).where(Match.project_id == project_id, Match.status == "accepted")
+        select(Match)
+        .options(joinedload(Match.mentor), joinedload(Match.investor))
+        .where(Match.project_id == project_id, Match.status == "accepted")
     )
-    for match in match_result.scalars().all():
-        if match.mentor_id:
-            u = await db.get(User, match.mentor_id)
-            if u:
-                members.append({"id": str(u.id), "full_name": u.full_name, "role": "mentor", "avatar_url": u.avatar_url})
-        if match.investor_id:
-            u = await db.get(User, match.investor_id)
-            if u:
-                members.append({"id": str(u.id), "full_name": u.full_name, "role": "investor", "avatar_url": u.avatar_url})
+    for match in match_result.unique().scalars().all():
+        if match.mentor:
+            members.append({"id": str(match.mentor.id), "full_name": match.mentor.full_name, "role": "mentor", "avatar_url": match.mentor.avatar_url})
+        if match.investor:
+            members.append({"id": str(match.investor.id), "full_name": match.investor.full_name, "role": "investor", "avatar_url": match.investor.avatar_url})
 
     return WorkspaceResponse(
         project={"id": str(project.id), "title": project.title},
@@ -183,7 +235,7 @@ async def send_message(
     db: DbSession,
     current_user: CurrentUser,
 ):
-    await _verify_workspace_access(db, project_id, current_user.id)
+    project = await _verify_workspace_access(db, project_id, current_user.id)
     message = Message(
         project_id=project_id,
         sender_id=current_user.id,
@@ -192,32 +244,7 @@ async def send_message(
     db.add(message)
     await db.flush()
 
-    # Notify other workspace members
-    project_result = await db.execute(
-        select(Project).where(Project.id == project_id, Project.is_deleted == False)
-    )
-    project = project_result.scalar_one_or_none()
-    if project:
-        other_members = []
-        if project.innovator_id != current_user.id:
-            other_members.append(project.innovator_id)
-        match_result = await db.execute(
-            select(Match).where(Match.project_id == project_id, Match.status == "accepted")
-        )
-        for m in match_result.scalars().all():
-            for mid in [m.mentor_id, m.investor_id]:
-                if mid and mid != current_user.id:
-                    other_members.append(mid)
-
-        for uid in set(other_members):
-            await create_notification(
-                db, str(uid), "New Message",
-                f"{current_user.full_name} sent a message in \"{project.title}\"",
-                notification_type="message",
-            )
-            u = await db.get(User, uid)
-            if u:
-                await send_message_notification(u.email, current_user.full_name, project.title)
+    await _notify_workspace_members(db, project, current_user.id, current_user.full_name, current_user.id)
 
     return MessageResponse(
         id=str(message.id),
