@@ -30,6 +30,7 @@ from src.models.activity import ActivityLog
 from src.models.moderation import Report, Block
 from src.models.pillar_submission import PillarSubmission
 from src.models.page import Page, PageRevision, Media
+from src.models.affiliate import AffiliateCode, AffiliateClick, AffiliateConversion
 
 __all__ = [
     "User",
@@ -71,4 +72,7 @@ __all__ = [
     "Page",
     "PageRevision",
     "Media",
+    "AffiliateCode",
+    "AffiliateClick",
+    "AffiliateConversion",
 ]

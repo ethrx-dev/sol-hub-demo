@@ -26,6 +26,12 @@ def slugify(title: str) -> str:
     return re.sub(r"[^a-z0-9-]", "", title.lower().replace(" ", "-"))[:200]
 
 
+def parse_tags(tags_str: str | None) -> list[str]:
+    if not tags_str:
+        return []
+    return [t.strip() for t in tags_str.split(",") if t.strip()]
+
+
 @router.get("/categories", response_model=list[BlogCategoryResponse])
 async def list_categories(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -90,7 +96,7 @@ async def list_posts(
                 author_id=p.author_id, author_name=p.author.full_name or p.author.email,
                 author_avatar=p.author.avatar_url,
                 category_id=p.category_id, category_name=p.category_rel.name if p.category_rel else None,
-                tags=p.tags, status=p.status, is_featured=p.is_featured,
+                tags=parse_tags(p.tags), status=p.status, is_featured=p.is_featured,
                 view_count=p.view_count, published_at=p.published_at,
                 created_at=p.created_at, updated_at=p.updated_at,
             )
@@ -118,7 +124,7 @@ async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(ge
         title=body.title, slug=slug, content=body.content, excerpt=body.excerpt,
         cover_image=body.cover_image, author_id=current_user.id,
         category_id=uuid.UUID(body.category_id) if body.category_id else None,
-        tags=body.tags, status=body.status, is_featured=body.is_featured,
+        tags=",".join(body.tags) if isinstance(body.tags, list) else body.tags, status=body.status, is_featured=body.is_featured,
         published_at=datetime.now(timezone.utc) if body.status == "published" else None,
     )
     db.add(post)
@@ -133,7 +139,7 @@ async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(ge
         author_id=post.author_id, author_name=current_user.full_name or current_user.email,
         author_avatar=current_user.avatar_url,
         category_id=post.category_id, category_name=None,
-        tags=post.tags, status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
         view_count=0, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -155,7 +161,7 @@ async def get_post_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=post.tags, status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -177,7 +183,7 @@ async def get_post(post_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=post.tags, status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -196,6 +202,8 @@ async def update_post(post_id: uuid.UUID, body: UpdateBlogPostRequest, db: Async
     update_data = body.model_dump(exclude_unset=True)
     if "category_id" in update_data:
         update_data["category_id"] = uuid.UUID(update_data["category_id"]) if update_data["category_id"] else None
+    if "tags" in update_data and isinstance(update_data["tags"], list):
+        update_data["tags"] = ",".join(update_data["tags"])
     if body.status == "published" and not post.published_at:
         update_data["published_at"] = datetime.now(timezone.utc)
     for field, value in update_data.items():
@@ -209,7 +217,7 @@ async def update_post(post_id: uuid.UUID, body: UpdateBlogPostRequest, db: Async
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=post.tags, status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )

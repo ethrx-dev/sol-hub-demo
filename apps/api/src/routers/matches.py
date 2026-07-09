@@ -95,8 +95,8 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
     if current_user.role == "admin":
         pass  # admins can create any match
     elif current_user.role == "innovator":
-        if mentor_id != current_user.id and investor_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Innovators can only express interest for themselves")
+        if project.innovator_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only create matches for your own projects")
     elif current_user.role == "mentor":
         if mentor_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentors can only create matches for themselves as mentor")

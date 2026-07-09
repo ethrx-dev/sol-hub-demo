@@ -64,9 +64,10 @@ async def create_category(
 ):
     if not current_user.is_super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can create categories")
+    slug = body.slug or body.name.lower().replace(" ", "-").replace("/", "-")[:100]
     cat = ForumCategory(
         name=body.name,
-        slug=body.slug,
+        slug=slug,
         description=body.description,
         icon=body.icon,
         display_order=body.display_order,
