@@ -16,11 +16,12 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get("/projects/?limit=50")
+    if (!user?.id) return;
+    api.get(`/projects/?limit=50&innovator_id=${user.id}`)
       .then((data: any) => setProjects(data.items || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   return (
     <div className="space-y-6">

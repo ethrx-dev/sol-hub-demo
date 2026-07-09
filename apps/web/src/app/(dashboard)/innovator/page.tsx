@@ -12,8 +12,9 @@ export default function InnovatorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) return;
     Promise.all([
-      api.get("/projects/?limit=100").catch(() => ({ items: [] })),
+      api.get(`/projects/?limit=100&innovator_id=${user.id}`).catch(() => ({ items: [] })),
       api.get("/resources/?limit=100").catch(() => ({ items: [] })),
     ])
       .then(([projectsData, resourcesData]: any[]) => {
@@ -26,7 +27,7 @@ export default function InnovatorDashboard() {
         });
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   return (
     <div className="space-y-6">
