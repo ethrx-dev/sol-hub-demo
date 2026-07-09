@@ -45,10 +45,9 @@ export function useWorkspaceWs(projectId: string | undefined) {
     const token = localStorage.getItem("auth_token");
     if (!token) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
-    const port = "8000";
-    const url = `${protocol}//${host}:${port}/api/ws/workspace/${projectId}`;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const wsBase = apiBase.replace(/^http/, "ws");
+    const url = `${wsBase}/ws/workspace/${projectId}`;
 
     const ws = new WebSocket(url, [token]);
     wsRef.current = ws;
