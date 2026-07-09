@@ -52,10 +52,6 @@ async def get_my_affiliate_code(db: DbSession, current_user: CurrentUser):
     )
 
 
-@router.get("/codes/stats", response_model=AffiliateCodeStats)
-async def get_affiliate_stats(db: DbSession, current_user: CurrentUser):
-
-
 @router.post("/track/click", status_code=status.HTTP_204_NO_CONTENT)
 async def track_click(request: Request, body: AffiliateClickRequest, db: DbSession):
     result = await db.execute(select(AffiliateCode).where(AffiliateCode.code == body.code, AffiliateCode.is_active == True))
