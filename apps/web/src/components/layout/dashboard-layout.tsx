@@ -11,6 +11,7 @@ const ROLE_PREFIXES: Record<UserRole, string[]> = {
   innovator: ["/innovator"],
   mentor: ["/mentor"],
   investor: ["/investor"],
+  participant: ["/participant"],
   admin: ["/admin"],
 };
 
@@ -42,6 +43,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         innovator: "/innovator",
         mentor: "/mentor",
         investor: "/investor",
+        participant: "/participant",
         admin: "/admin",
       };
       router.push(dashPaths[user.role] || "/");

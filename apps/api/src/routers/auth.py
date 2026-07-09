@@ -26,6 +26,7 @@ from src.schemas.auth import (
 )
 from src.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
 from src.utils.email import send_password_reset_email, send_welcome_email, send_verification_email
+from src.utils.notifications import notify_admins_new_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -71,6 +72,7 @@ async def register(request: Request, body: RegisterRequest, db: DbSession):
     ))
 
     await send_welcome_email(user.email, user.full_name, verification_token_str)
+    await notify_admins_new_user(db, user)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token_str)
 

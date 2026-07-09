@@ -12,6 +12,7 @@ from src.schemas.workspace import DocumentResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
 from src.utils.storage import upload_file
+from src.utils.notifications import notify_admins_new_project
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -41,6 +42,7 @@ async def create_project(body: ProjectCreateRequest, db: DbSession, current_user
     )
     db.add(project)
     await db.flush()
+    await notify_admins_new_project(db, project, current_user)
     return project
 
 

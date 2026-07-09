@@ -191,6 +191,17 @@ async def update_match(match_id: uuid.UUID, body: MatchUpdateRequest, db: DbSess
     project = await db.get(Project, match.project_id)
     project_title = project.title if project else None
 
+    if body.status == "accepted":
+        innovator = await db.get(User, project.innovator_id) if project else None
+        if innovator and innovator.id != current_user.id:
+            await create_notification(
+                db=db,
+                user_id=str(innovator.id),
+                title="Match Accepted",
+                message=f"{current_user.full_name} accepted the match for {project_title}. Head to the workspace to start collaborating.",
+                notification_type="match_accepted",
+            )
+
     matched_user = None
     if match.mentor_id and match.mentor_id != current_user.id:
         matched_user = await db.get(User, match.mentor_id)

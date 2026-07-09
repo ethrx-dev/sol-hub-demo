@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MatchCard } from "@/src/components/shared/match-card";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/src/components/ui/tabs";
 import { toast } from "sonner";
+import { Button } from "@/src/components/ui/button";
 import { api } from "@/src/lib/api-client";
 
 export default function MentorMatchesPage() {
+  const router = useRouter();
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +28,9 @@ export default function MentorMatchesPage() {
     try {
       await api.patch(`/matches/${id}`, { status: "accepted" });
       setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: "accepted" } : m)));
-      toast.success("Match accepted!");
+      toast("Match accepted! Head to the workspace to start collaborating.", {
+        action: { label: "Open Workspace", onClick: () => router.push("/workspaces") },
+      });
     } catch {
       toast.error("Failed to accept match");
     }
@@ -78,6 +83,7 @@ export default function MentorMatchesPage() {
                     matchedUserAvatar={match.matched_user_avatar}
                     matchedUserRole={match.matched_user_role || ""}
                     status={match.status}
+                    viewerRole="mentor"
                     onAccept={() => handleAccept(match.id)}
                     onDecline={() => handleDecline(match.id)}
                   />

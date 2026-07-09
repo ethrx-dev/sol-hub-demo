@@ -246,6 +246,7 @@ function RegisterForm() {
                   <SelectItem value="innovator">Innovator</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
                   <SelectItem value="investor">Investor</SelectItem>
+                  <SelectItem value="participant">Participant</SelectItem>
                 </SelectContent>
               </Select>
             </div>

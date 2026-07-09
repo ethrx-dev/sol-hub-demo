@@ -38,6 +38,7 @@ const PILLAR_LABELS: Record<string, string> = {
   innovator: "Innovator",
   mentor: "Mentor",
   investor: "Conscious Investor",
+  participant: "Participant",
 };
 
 const PILLAR_MAP: Record<string, "innovators" | "mentors" | "investors"> = {
@@ -77,6 +78,7 @@ export function OnboardingFlow() {
         innovator: "/innovator/projects",
         mentor: "/mentor/browse",
         investor: "/investor/browse",
+        participant: "/participant",
         admin: "/admin",
       };
       router.push(dashboards[user?.role || ""] || "/");
@@ -147,7 +149,7 @@ export function OnboardingFlow() {
               <div className="flex justify-center mb-2">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <span className="text-2xl font-bold text-primary font-heading">
-                    {role === "innovator" ? "I" : role === "mentor" ? "M" : "CI"}
+                    {role === "innovator" ? "I" : role === "mentor" ? "M" : role === "investor" ? "CI" : "P"}
                   </span>
                 </div>
               </div>
@@ -157,7 +159,9 @@ export function OnboardingFlow() {
                   ? "You'll submit ideas, get matched with mentors and investors, and track your project milestones."
                   : role === "mentor"
                   ? "You'll browse projects, share your expertise, and guide the next generation of entrepreneurs."
-                  : "You'll discover vetted projects, invest consciously, and track your portfolio."}
+                  : role === "investor"
+                  ? "You'll discover vetted projects, invest consciously, and track your portfolio."
+                  : "You'll explore the hub, connect with the community, and access SOL resources."}
               </p>
             </div>
           )}
@@ -264,6 +268,11 @@ export function OnboardingFlow() {
                   </div>
                 </>
               )}
+              {role === "participant" && (
+                <div className="text-sm text-muted-foreground text-center py-4">
+                  You can update your profile details later from your settings.
+                </div>
+              )}
             </div>
           )}
 
@@ -287,7 +296,7 @@ export function OnboardingFlow() {
                     <p className="text-xs text-muted-foreground">Feeds, groups, forums, events, and more</p>
                   </div>
                 </Link>
-                <Link href={role === "innovator" ? "/innovator/projects" : role === "mentor" ? "/mentor/browse" : "/investor/browse"} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
+                <Link href={role === "innovator" ? "/innovator/projects" : role === "mentor" ? "/mentor/browse" : role === "investor" ? "/investor/browse" : "/participant"} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">D</span>
                   <div>
                     <p className="text-sm font-medium">Visit Your Dashboard</p>

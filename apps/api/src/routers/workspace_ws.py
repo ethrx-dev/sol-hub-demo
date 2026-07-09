@@ -44,58 +44,56 @@ async def _ws_notify_members(db, project, sender_id, sender_name):
 
 @router.websocket("/api/ws/workspace/{project_id}")
 async def workspace_ws(websocket: WebSocket, project_id: str):
-    subprotocols = websocket.headers.get("sec-websocket-protocol", "")
-    token = subprotocols.split(",")[0].strip() if subprotocols else None
-
-    if not token:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
+    uid = None
+    pid = None
     try:
-        payload = decode_token(token)
-        user_id = payload.get("sub")
-    except Exception:
-        logger.warning("WebSocket auth failed", exc_info=True)
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
+        logger.warning("WS HIT project_id=%s", project_id)
+        subprotocols = websocket.headers.get("sec-websocket-protocol", "")
+        token = subprotocols.split(",")[0].strip() if subprotocols else None
 
-    if not user_id:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    try:
-        pid = uuid.UUID(project_id)
-        uid = uuid.UUID(user_id)
-    except (ValueError, TypeError):
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    async with async_session() as db:
-        project = await db.get(Project, pid)
-        if not project or project.is_deleted:
+        if not token:
+            logger.warning("WS reject: no token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        if project.innovator_id != uid:
-            match_result = await db.execute(
-                select(Match).where(
-                    Match.project_id == pid,
-                    Match.status == "accepted",
-                )
-            )
-            authorized = any(
-                m.mentor_id == uid or m.investor_id == uid
-                for m in match_result.scalars().all()
-            )
-            if not authorized:
+        payload = decode_token(token)
+        user_id = payload.get("sub")
+
+        if not user_id:
+            logger.warning("WS reject: no user_id")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        pid = uuid.UUID(project_id)
+        uid = uuid.UUID(user_id)
+
+        async with async_session() as db:
+            project = await db.get(Project, pid)
+            if not project or project.is_deleted:
+                logger.warning("WS reject: project not found pid=%s", pid)
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
 
-    await websocket.accept()
+            if project.innovator_id != uid:
+                match_result = await db.execute(
+                    select(Match).where(
+                        Match.project_id == pid,
+                        Match.status == "accepted",
+                    )
+                )
+                authorized = any(
+                    m.mentor_id == uid or m.investor_id == uid
+                    for m in match_result.scalars().all()
+                )
+                if not authorized:
+                    logger.warning("WS reject: unauthorized uid=%s pid=%s", uid, pid)
+                    await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                    return
 
-    room = f"workspace:{project_id}"
+        await websocket.accept(subprotocol=token)
+        logger.warning("WS connected uid=%s pid=%s subproto=%s", uid, pid, token[:20])
 
-    try:
+        room = f"workspace:{project_id}"
         await manager.join(room, websocket)
 
         while True:
@@ -145,8 +143,13 @@ async def workspace_ws(websocket: WebSocket, project_id: str):
                 await db.commit()
 
     except WebSocketDisconnect:
-        pass
+        logger.warning("WS disconnected uid=%s pid=%s", uid, pid)
     except Exception:
-        logger.error("WebSocket message handler error", exc_info=True)
+        logger.error("WS error uid=%s pid=%s", uid, pid, exc_info=True)
     finally:
-        await manager.leave(room, websocket)
+        if uid and pid:
+            room = f"workspace:{project_id}"
+            try:
+                await manager.leave(room, websocket)
+            except Exception:
+                pass

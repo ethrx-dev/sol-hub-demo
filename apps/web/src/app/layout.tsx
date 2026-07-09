@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   title: "SOL Hub - Private Membership Incubation Platform",
   description:
     "Nurture your dream into a successful business with SOL Hub. Join a community of innovators, mentors, and conscious investors.",
+  icons: {
+    icon: "/sol-icon-color.svg",
+    shortcut: "/sol-icon-color.svg",
+  },
 };
 
 export default function RootLayout({

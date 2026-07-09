@@ -115,3 +115,15 @@ CurrentInnovator = Annotated[User, Depends(get_current_innovator)]
 CurrentMentor = Annotated[User, Depends(get_current_mentor)]
 CurrentInvestor = Annotated[User, Depends(get_current_investor)]
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
+
+async def get_current_participant(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "participant":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only participants can access this resource",
+        )
+    return current_user
+
+
+CurrentParticipant = Annotated[User, Depends(get_current_participant)]

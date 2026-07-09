@@ -49,12 +49,24 @@ export function useWorkspaceWs(projectId: string | undefined) {
     const wsBase = apiBase.replace(/^http/, "ws");
     const url = `${wsBase}/ws/workspace/${projectId}`;
 
+    console.log("[WS] creating", url, "effectTag:", (window as any).__wsCount || 0);
+    (window as any).__wsCount = ((window as any).__wsCount || 0) + 1;
+
     const ws = new WebSocket(url, [token]);
     wsRef.current = ws;
 
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
+    ws.onopen = () => {
+      console.log("[WS] onopen");
+      setConnected(true);
+    };
+    ws.onclose = (e) => {
+      console.log("[WS] onclose code:", e.code, "reason:", e.reason, "wasClean:", e.wasClean);
+      setConnected(false);
+    };
+    ws.onerror = () => {
+      console.log("[WS] onerror");
+      setConnected(false);
+    };
 
     ws.onmessage = (event) => {
       try {
@@ -68,6 +80,7 @@ export function useWorkspaceWs(projectId: string | undefined) {
     };
 
     return () => {
+      console.log("[WS] cleanup");
       ws.close();
       wsRef.current = null;
       setConnected(false);

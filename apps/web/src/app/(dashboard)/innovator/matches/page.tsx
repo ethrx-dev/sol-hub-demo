@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MatchCard } from "@/src/components/shared/match-card";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { api } from "@/src/lib/api-client";
 
 export default function InnovatorMatchesPage() {
+  const router = useRouter();
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,26 +22,6 @@ export default function InnovatorMatchesPage() {
   };
 
   useEffect(() => { fetchMatches(); }, []);
-
-  const handleAccept = async (id: string) => {
-    try {
-      await api.patch(`/matches/${id}`, { status: "accepted" });
-      setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: "accepted" } : m)));
-      toast.success("Match accepted!");
-    } catch {
-      toast.error("Failed to accept match");
-    }
-  };
-
-  const handleDecline = async (id: string) => {
-    try {
-      await api.patch(`/matches/${id}`, { status: "declined" });
-      setMatches((prev) => prev.map((m) => (m.id === id ? { ...m, status: "declined" } : m)));
-      toast.info("Match declined");
-    } catch {
-      toast.error("Failed to decline match");
-    }
-  };
 
   const filterByStatus = (status: string) =>
     status === "all" ? matches : matches.filter((m) => m.status === status);
@@ -89,8 +71,7 @@ export default function InnovatorMatchesPage() {
                     matchedUserAvatar={match.matched_user_avatar}
                     matchedUserRole={match.matched_user_role || ""}
                     status={match.status}
-                    onAccept={() => handleAccept(match.id)}
-                    onDecline={() => handleDecline(match.id)}
+                    viewerRole="innovator"
                   />
                 ))}
               </div>

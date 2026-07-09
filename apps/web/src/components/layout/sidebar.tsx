@@ -59,6 +59,12 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
     { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
   ],
+  participant: [
+    { href: "/participant", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
+    { href: "/notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
+    { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
+  ],
   admin: [
     { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { href: "/admin/users", label: "Users", icon: <UserCog className="h-4 w-4" /> },
