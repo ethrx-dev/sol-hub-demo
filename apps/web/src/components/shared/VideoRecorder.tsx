@@ -48,6 +48,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cameraReadyRef = useRef(false);
+  const recordingStartedRef = useRef(false);
 
   const questions = QUESTIONS[pillar];
 
@@ -170,23 +171,20 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
   }, [startCamera]);
 
   useEffect(() => {
-    if (state !== "countdown" || countdown <= 0) return;
-    const id = setTimeout(() => {
-      setCountdown((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          if (cameraReadyRef.current && streamRef.current) {
-            startRecording(streamRef.current);
-          } else {
-            setError("Camera access is required. Please allow camera and microphone permissions.");
-            setState("idle");
-          }
-        }
-        return next;
-      });
-    }, 1000);
-    return () => clearTimeout(id);
-  }, [state, countdown]);
+    if (state !== "countdown") return;
+    if (countdown > 0) {
+      const id = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
+      return () => clearTimeout(id);
+    }
+    if (recordingStartedRef.current) return;
+    recordingStartedRef.current = true;
+    if (cameraReadyRef.current && streamRef.current) {
+      startRecording(streamRef.current);
+    } else {
+      setError("Camera access is required. Please allow camera and microphone permissions.");
+      setState("idle");
+    }
+  }, [state, countdown, startRecording]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
@@ -205,7 +203,8 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       formData.append("video", recordedBlob, `intro.${ext}`);
 
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:8000/api/pillars/submit-video", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+      const res = await fetch(`${apiUrl}/pillars/submit-video`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -232,6 +231,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
     setError(null);
     setActiveQuestion(0);
     setElapsed(0);
+    recordingStartedRef.current = false;
   }, [cleanup]);
 
   const remaining = TOTAL_SECONDS - elapsed;
