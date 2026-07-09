@@ -128,7 +128,7 @@ export default function LandingPage() {
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
             <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-4xl sm:text-5xl lg:text-[4rem] font-black font-heading leading-[1em] text-white">
+              <h2 className="text-[1.4rem] font-bold font-heading leading-[1.1em] text-accent">
                 Spaces of Learning
               </h2>
               <h2 className="mt-4 text-4xl sm:text-5xl lg:text-[4rem] font-black font-heading leading-[1em] text-white">
