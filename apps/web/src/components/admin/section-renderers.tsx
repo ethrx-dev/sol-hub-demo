@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight } from "lucide-react";
+import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass } from "lucide-react";
 
 interface Section {
   id: string;
@@ -17,6 +17,7 @@ const ICON_MAP: Record<string, ReactNode> = {
   rocket: <Rocket className="h-12 w-12" />,
   handshake: <Handshake className="h-12 w-12" />,
   graduation_cap: <GraduationCap className="h-12 w-12" />,
+  compass: <Compass className="h-12 w-12" />,
   file_text: <FileText className="h-8 w-8" />,
   users: <Users className="h-8 w-8" />,
   pen: <Pen className="h-8 w-8" />,
@@ -159,6 +160,64 @@ function PillarCardsBlock({ data }: { data: Record<string, unknown> }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ParticipantCardBlock(_props: { data: Record<string, unknown> }) {
+  return (
+    <section className="py-10">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-center">
+          <div
+            className="relative flex flex-col items-center text-center w-full max-w-lg px-8 py-12"
+            style={{
+              background: "linear-gradient(135deg, #f5f0e8 0%, #e8f0e3 100%)",
+              borderRadius: "70px 0 70px 0",
+              border: "2px dashed #729D64",
+            }}
+          >
+            <div
+              className="flex items-center justify-center mb-5"
+              style={{
+                width: "74px",
+                height: "74px",
+                borderRadius: "50%",
+                background: "#729D64",
+              }}
+            >
+              <Compass className="h-9 w-9 text-white" />
+            </div>
+            <h2 className="text-[1.6rem] font-bold font-heading leading-[1.1em] text-foreground mb-2">
+              Not sure where you fit?
+            </h2>
+            <p className="text-base text-muted-foreground max-w-sm">
+              We get it. Maybe you&apos;re curious, exploring options, or just want to
+              be part of something meaningful without a label. Join as a Participant —
+              browse the hub, attend events, meet the community, and find your place
+              when it feels right.
+            </p>
+            <div className="mt-6 flex items-center gap-3 text-sm text-accent font-medium">
+              <span>No commitment required</span>
+              <span className="w-1 h-1 rounded-full bg-accent" />
+              <span>Explore freely</span>
+              <span className="w-1 h-1 rounded-full bg-accent" />
+              <span>Find your people</span>
+            </div>
+            <Link
+              href="/register?role=participant"
+              className="inline-flex items-center gap-2 mt-6 text-sm font-bold uppercase tracking-wider"
+              style={{
+                color: "#729D64",
+                borderBottom: "2px solid #729D64",
+                paddingBottom: "4px",
+              }}
+            >
+              I&apos;m Interested — Join as a Participant <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -961,6 +1020,7 @@ const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => Re
   hero_slideshow: HeroSlideshowBlock,
   tagline: TaglineBlock,
   pillar_cards: PillarCardsBlock,
+  participant_card: ParticipantCardBlock,
   overlay_card: OverlayCardBlock,
   mission: MissionBlock,
   quote: QuoteBlock,

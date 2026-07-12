@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { DynamicPage } from "@/src/components/admin/section-renderers";
-import { Rocket, Handshake, GraduationCap, Users, Heart, FileText, Pen, ArrowRight, Check } from "lucide-react";
+import { Rocket, Handshake, GraduationCap, Users, Heart, FileText, Pen, ArrowRight, Compass } from "lucide-react";
 
 const slides = [
   "/hero-1.jpg",
@@ -57,12 +57,6 @@ const steps = [
   },
 ];
 
-const hubChecklist = [
-  "See Projects",
-  "Be paired with projects",
-  "Connect with users",
-];
-
 interface CMSPage {
   sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
 }
@@ -89,12 +83,10 @@ export default function LandingPage() {
       .catch(() => setCmsPage(null));
   }, []);
 
-  // If CMS page exists with sections, render dynamically
   if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
     return <DynamicPage sections={cmsPage.sections} />;
   }
 
-  // Fallback: render hardcoded content (when no CMS page or still loading)
   return (
     <>
       {/* 1. HERO */}
@@ -138,6 +130,49 @@ export default function LandingPage() {
                 SOL&apos;s helpful mentors, conscious investors and private business portal brings
                 success for a better Earth.
               </p>
+              <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
+                <Link
+                  href="/what-we-do"
+                  className="btn-sol uppercase text-sm text-white"
+                  style={{
+                    background: "#729D64",
+                    borderRadius: "0 30px 0 30px",
+                    padding: "20px 40px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#EFC89A";
+                    e.currentTarget.style.color = "#000";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#729D64";
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                >
+                  Find Your Path
+                </Link>
+                <Link
+                  href="/become-a-member"
+                  className="btn-sol uppercase text-sm"
+                  style={{
+                    background: "transparent",
+                    border: "2px solid #EFC89A",
+                    color: "#fff",
+                    padding: "18px 40px",
+                    borderRadius: "0 30px 0 30px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#EFC89A";
+                    e.currentTarget.style.color = "#000";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.borderColor = "#EFC89A";
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                >
+                  Join SOL
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -155,9 +190,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 3. PILLAR CARDS */}
+      {/* 3. PILLAR CARDS + PARTICIPANT */}
       <section className="py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-[2.2rem] font-bold font-heading leading-[1.1em] text-foreground">
+              Find the role that fits you
+            </h2>
+            <p className="mt-4 text-muted-foreground text-lg max-w-xl mx-auto">
+              Whether you have a clear vision or are just beginning to explore, there&apos;s a place for you here.
+            </p>
+          </div>
           <div className="grid gap-6 md:grid-cols-3">
             {pillars.map((p, i) => {
               const Icon = p.icon;
@@ -185,64 +228,65 @@ export default function LandingPage() {
               );
             })}
           </div>
-        </div>
-      </section>
 
-      {/* 4. SOL HUB */}
-      <section className="py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div
-            className="relative min-h-[380px] flex items-center overflow-hidden"
-            style={{ borderRadius: "70px 0 70px 0" }}
-          >
+          {/* PARTICIPANT CARD */}
+          <div className="mt-8 flex justify-center">
             <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url(/investor-bg.jpg)" }}
-            />
-            <div
-              className="absolute inset-0"
+              className="relative flex flex-col items-center text-center w-full max-w-lg px-8 py-12"
               style={{
-                background: "linear-gradient(180deg, rgba(114,157,100,0.49) 0%, #729D64 100%)",
+                background: "linear-gradient(135deg, #f5f0e8 0%, #e8f0e3 100%)",
+                borderRadius: "70px 0 70px 0",
+                border: "2px dashed #729D64",
               }}
-            />
-            <div className="relative z-10 px-10 py-[70px] w-full">
-              <h2 className="text-[2.2rem] font-bold font-heading leading-[1.1em] text-accent mb-4">SOL HUB</h2>
-              <p className="text-[1.4rem] font-bold font-heading leading-[1.1em] text-white max-w-xl mb-6">
-                Join our private portal and be paired with the right people.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {hubChecklist.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-white text-lg font-bold">
-                    <Check className="h-6 w-6 text-accent shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/what-we-do"
-                className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-accent hover:text-white"
+            >
+              <div
+                className="flex items-center justify-center mb-5"
+                style={{
+                  width: "74px",
+                  height: "74px",
+                  borderRadius: "50%",
+                  background: "#729D64",
+                }}
               >
-                Join Now <ArrowRight className="h-4 w-4" />
+                <Compass className="h-9 w-9 text-white" />
+              </div>
+              <h2 className="text-[1.6rem] font-bold font-heading leading-[1.1em] text-foreground mb-2">
+                Not sure where you fit?
+              </h2>
+              <p className="text-base text-muted-foreground max-w-sm">
+                We get it. Maybe you&apos;re curious, exploring options, or just want to
+                be part of something meaningful without a label. Join as a Participant —
+                browse the hub, attend events, meet the community, and find your place
+                when it feels right.
+              </p>
+              <div className="mt-6 flex items-center gap-3 text-sm text-accent font-medium">
+                <span>No commitment required</span>
+                <span className="w-1 h-1 rounded-full bg-accent" />
+                <span>Explore freely</span>
+                <span className="w-1 h-1 rounded-full bg-accent" />
+                <span>Find your people</span>
+              </div>
+              <Link
+                href="/register?role=participant"
+                className="inline-flex items-center gap-2 mt-6 text-sm font-bold uppercase tracking-wider"
+                style={{
+                  color: "#729D64",
+                  borderBottom: "2px solid #729D64",
+                  paddingBottom: "4px",
+                }}
+              >
+                I&apos;m Interested — Join as a Participant <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. OUR MISSION */}
+      {/* 4. OUR MISSION */}
       <section className="py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-12 md:grid-cols-2 items-center">
             <div>
-              <span
-                className="inline-block px-[15px] py-[5px] text-[12px] font-sans font-normal uppercase tracking-[3px] text-dark mb-6"
-                style={{
-                  background: "#EFC89A",
-                  borderRadius: "0 10px 0 10px",
-                }}
-              >
-                <Link href="/blog">OUR MISSION</Link>
-              </span>
               <h2 className="text-[1.8rem] font-bold font-heading leading-[1.1em] text-foreground">
                 A hub for Innovation to Solution
               </h2>
@@ -262,10 +306,10 @@ export default function LandingPage() {
                 way: the SOL way. Join us and help make a difference!
               </p>
               <Link
-                href="/about"
+                href="/become-a-member"
                 className="btn-sol btn-sol-primary inline-flex mt-8 text-sm uppercase"
               >
-                About Us
+                Join the Movement
               </Link>
             </div>
             <div className="relative" style={{ margin: "66px 0 0 23px" }}>
@@ -280,7 +324,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 6. QUOTE / PARALLAX */}
+      {/* 5. QUOTE / PARALLAX */}
       <section className="relative py-[5em] px-[8em] text-center mt-[100px] overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -290,7 +334,7 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto max-w-4xl">
           <Heart className="mx-auto mb-6 text-accent" style={{ fontSize: "94px", width: "94px", height: "94px" }} />
           <h2 className="text-[2.2rem] font-bold font-heading leading-[1.1em] text-white">
-            &ldquo;If you can dream it, you can achieve it.&rdquo; - Zig Ziglar
+            &ldquo;If you can dream it, you can achieve it.&rdquo; — Zig Ziglar
           </h2>
           <h2 className="mt-6 text-[1.8rem] font-bold font-heading leading-[1.1em] text-accent">
             Think Globally, Act Locally &amp; Connect Everywhere
@@ -298,24 +342,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 7. HOW IT WORKS */}
+      {/* 6. HOW IT WORKS */}
       <section className="py-20 text-center">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <span
-            className="inline-block px-[15px] py-[5px] text-[12px] font-sans font-normal uppercase tracking-[3px] text-dark mb-6"
-            style={{
-              background: "#EFC89A",
-              borderRadius: "0 10px 0 10px",
-            }}
-          >
-            <Link href="/blog">How it works?</Link>
-          </span>
           <h2 className="text-[2.2rem] font-bold font-heading leading-[1.1em] text-foreground">
             Collaboration Over Competition
           </h2>
           <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
             The future thrives on collaboration and cooperation, not competition. SOL fosters a
-            global mindset with local action, creating solutions
+            global mindset with local action, creating solutions together.
           </p>
           <div className="mt-16 grid gap-[40px] md:grid-cols-3 max-w-[1038px] mx-auto">
             {steps.map((step) => {
@@ -340,7 +375,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-12">
             <Link
-              href="/what-we-do"
+              href="/become-a-member"
               className="btn-sol btn-sol-primary inline-flex uppercase text-sm"
               style={{ flexDirection: "row-reverse", gap: "22px" }}
             >
@@ -351,7 +386,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 8. JOIN SOL TODAY CTA */}
+      {/* 7. JOIN SOL TODAY CTA */}
       <section className="relative overflow-hidden mt-10 mb-10 px-5">
         <div
           className="relative min-h-[84vh] flex items-center overflow-hidden"
@@ -404,7 +439,7 @@ export default function LandingPage() {
                 Become a Member
               </Link>
               <Link
-                href="https://portal.spacesoflearning.com"
+                href="/what-we-do"
                 className="btn-sol uppercase text-sm text-white"
                 style={{
                   background: "#02010100",
@@ -421,7 +456,7 @@ export default function LandingPage() {
                   e.currentTarget.style.color = "#fff";
                 }}
               >
-                Members Portal
+                Learn More
               </Link>
             </div>
           </div>
