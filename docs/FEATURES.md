@@ -1,6 +1,6 @@
 # SOL Hub — Feature Overview
 
-> Version: 0.1.0 · Updated: 2026-07-08
+> Version: 0.1.0 · Updated: 2026-07-14
 
 ---
 
@@ -139,6 +139,15 @@
 | **Membership agreement** — Required on register, timestamped acceptance | `membership.py` | No |
 | **Subscription tiers** — Basic / premium (future: Stripe recurring) | `subscription.py` | Auth |
 
+### Donations (Feature 7 — Donation Page Activation)
+One-time donations are captured via a Stripe webhook (`mode="payment"`) and recorded in the `donations` table. The handler verifies the Stripe signature, is idempotent (tracks processed event IDs to skip duplicates), creates a `Donation` row (amount, currency, donor email, Stripe event/charge IDs), and notifies admins. Stripe keys are optional — without `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` the webhook returns `501 Not Implemented`.
+
+| Feature | API Module | Gated |
+|---------|-----------|-------|
+| **Donate** — Public one-time donation via Stripe (Checkout / payment element) | `membership.py` (webhook) | No |
+| **Webhook** — `mode="payment"`, signature-verified, idempotent, writes `Donation` | `membership.py` | No |
+| **Donations list (admin)** — Paginated list + total count + total amount | `admin.py` | Admin |
+
 ## 14. Admin Panel
 
 | Feature | API Module | Gated |
@@ -151,6 +160,7 @@
 | **Project status** — Admin override of project status | `admin.py` | Admin |
 | **CMS pages** — Create/edit/publish/unpublish all CMS pages with revision history | `admin_pages.py` | Admin |
 | **Admin media** — Full media library management | `admin_media.py` | Admin |
+| **Donations dashboard** — Paginated donations list, total count + total amount | `admin.py` | Admin |
 
 ## 15. Resources
 
@@ -206,10 +216,10 @@ Enabled by default on both dev and `dev.spacesoflearning.com`.
 | Feature | Details |
 |---------|---------|
 | **Framework** | Next.js 15 (App Router), React 19, TypeScript strict |
-| **CSS** | Tailwind v4, LightningCSS |
+| **CSS** | Tailwind v4 via `@tailwindcss/postcss` (PostCSS plugin; `experimental.useLightningcss` is intentionally disabled because LightningCSS conflicts with PostCSS plugins) |
 | **State** | Zustand (auth, notifications, tour) |
 | **Auth** | JWT stored in localStorage, auto-check on mount, `ProtectedRoute` wrapper |
 | **API client** | Fetch wrapper with auto-refresh on 401 |
-| **Admin UI** | Dashboard for users, groups, posts, resources, CMS pages, media |
+| **Admin UI** | Dashboard for users, groups, posts, resources, CMS pages, media, donations |
 | **Pages** | Public: home, about, what-we-do, innovators, contact, donate, blog, page/* |
 | **Dashboard** | Projects, matches, workspace, investments, feed, profile |

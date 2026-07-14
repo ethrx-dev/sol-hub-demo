@@ -311,7 +311,7 @@ curl -X POST http://localhost:8000/api/admin/seed \
 | Moderation | `/api/moderation` | report content, block users |
 | Membership | `/api/membership` | plans, checkout, Stripe webhooks |
 | Media | `/api/media` | upload |
-| Admin | `/api/admin` | seed, stats, users, projects, matches, groups, posts, resources, media, pages, pricing, reports, blog, pillar-submissions |
+| Admin | `/api/admin` | seed, stats, users, projects, matches, groups, posts, resources, media, pages, pricing, reports, blog, pillar-submissions, donations |
 
 ---
 
@@ -352,6 +352,7 @@ The seed endpoint is idempotent — it rejects any subsequent requests with `409
 | `/admin/blog` | `GET /api/admin/blog`, `POST ...`, `PATCH ...`, `DELETE ...` | Blog post CRUD |
 | `/admin/pillar-submissions` | `GET /api/admin/pillar-submissions` | Review pillar video submissions |
 | `/admin/reports` | `GET /api/admin/reports`, `PATCH .../status` | Moderate reported content |
+| `/admin/donations` | `GET /api/admin/donations` | View all donations, total count + total amount |
 
 ### Super Admin
 
@@ -591,7 +592,7 @@ User → Browser → Next.js (SSR) → API (FastAPI) → PostgreSQL
 ### Stripe Webhooks
 - Signature verified on every request via `stripe.Webhook.construct_event()`
 - Processed event IDs tracked for idempotency (prevents duplicate processing)
-- Full lifecycle handled: checkout, invoice, subscription events
+- Full lifecycle handled: checkout, invoice, subscription events, and one-time donations (`mode="payment"` via the `membership` webhook)
 - Demo mode guarded by `ENVIRONMENT=development` check
 
 ### Database

@@ -17,6 +17,8 @@ cd sol-hub
 pnpm install
 ```
 
+> **Web CSS (Tailwind v4):** The web app compiles CSS through the `@tailwindcss/postcss` PostCSS plugin (`apps/web/postcss.config.mjs`). Both `@tailwindcss/postcss` and `tailwindcss` are declared in `apps/web/package.json`, so `pnpm install` provides them. `next.config.ts` intentionally does **not** enable `experimental.useLightningcss` — LightningCSS conflicts with PostCSS plugins and will crash the build. `globals.css` is imported in `src/app/layout.tsx` (do not reference it via a `<link href="/globals.css">`, which 404s).
+
 ## 2. Python Virtual Environment
 
 ```bash
@@ -225,4 +227,5 @@ Set `NEXT_PUBLIC_PLAUSIBLE_URL` (e.g. `https://plausible.io`) and `NEXT_PUBLIC_P
 | Reporting & moderation | Built | Report content, block users, admin review queue |
 | Rate limiting | Built | slowapi on auth and sensitive endpoints |
 | Analytics | Built | Plausible script injection |
+| Donations (one-time, Stripe webhook) | Built | Donation model + migration, webhook handler (idempotent, signature-verified), admin donations dashboard |
 | Security audits | Built | Startup guards on weak secrets, CSP headers, CORS enforcement |
