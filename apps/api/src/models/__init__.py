@@ -28,6 +28,7 @@ from src.models.doc_library import DocCategory, DocLibraryItem
 from src.models.blog import BlogCategory, BlogPost
 from src.models.activity import ActivityLog
 from src.models.moderation import Report, Block
+from src.models.donation import Donation
 from src.models.pillar_submission import PillarSubmission
 from src.models.page import Page, PageRevision, Media
 from src.models.affiliate import AffiliateCode, AffiliateClick, AffiliateConversion
@@ -68,6 +69,7 @@ __all__ = [
     "ActivityLog",
     "Report",
     "Block",
+    "Donation",
     "PillarSubmission",
     "Page",
     "PageRevision",

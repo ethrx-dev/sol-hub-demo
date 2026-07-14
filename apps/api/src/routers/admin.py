@@ -18,6 +18,7 @@ from src.models.group import Group
 from src.models.post import Post
 from src.models.resource import Resource
 from src.models.blog import BlogPost, ReviewStatus
+from src.models.donation import Donation
 from src.schemas.blog import BlogPostResponse
 from src.schemas.admin import (
     AdminSeedRequest,
@@ -598,3 +599,43 @@ async def reject_story(
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
+
+
+@router.get("/donations")
+async def list_donations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: DbSession = None,
+    current_admin: CurrentAdmin = None,
+):
+    result = await db.execute(
+        select(Donation).order_by(Donation.created_at.desc()).offset(skip).limit(limit)
+    )
+    donations = result.scalars().all()
+
+    total_q = select(func.count(Donation.id))
+    total_result = await db.execute(total_q)
+    total = total_result.scalar() or 0
+
+    sum_q = select(func.sum(Donation.amount)).where(Donation.status == "completed")
+    sum_result = await db.execute(sum_q)
+    total_amount = sum_result.scalar() or 0
+
+    return {
+        "items": [
+            {
+                "id": str(d.id),
+                "amount": d.amount,
+                "currency": d.currency,
+                "donorName": d.donor_name,
+                "donorEmail": d.donor_email,
+                "userId": str(d.user_id) if d.user_id else None,
+                "status": d.status,
+                "receiptUrl": d.receipt_url,
+                "createdAt": d.created_at.isoformat() if d.created_at else None,
+            }
+            for d in donations
+        ],
+        "total": total,
+        "totalAmount": total_amount,
+    }
