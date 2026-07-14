@@ -4,7 +4,7 @@ import { Providers } from "@/src/components/providers";
 import { Toaster } from "@/src/components/ui/toast";
 import { ErrorBoundary } from "@/src/components/shared/error-boundary";
 import { Analytics } from "@/src/components/shared/analytics";
-// CSS loaded via <link> in metadata (pre-built by @tailwindcss/cli)
+import "./globals.css";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -36,7 +36,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${roboto.variable} font-sans`}>
-        <link rel="stylesheet" href="/globals.css" />
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>
