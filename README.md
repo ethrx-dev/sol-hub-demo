@@ -522,21 +522,21 @@ The `infra/terraform/main.tf` provides a template for:
 ```
                          Cloudflare / DNS
                               │
-                    ┌── Nginx/Caddy (TLS) ──┐
+                    ┌── Nginx/Caddy (TLS) ───┐
                     │       :443             │   SSL termination
-                    └───┬───────────────┬────┘
-                        │               │
-                 ┌── Next.js :3000 ──┐  │
-                 │  SSR/SSG pages    │  │
-                 │  API rewrites     │  │
-                 └──────┬────────────┘  │
-                        │               │
+                    └───┬────────────────┬───┘
+                        │                │
+                 ┌── Next.js :3000 ──┐   │
+                 │  SSR/SSG pages    │   │
+                 │  API rewrites     │   │
+                 └──────┬────────────┘   │
+                        │                │
                  ┌── FastAPI :8000 ────┐ │
                  │  Business logic     │ │
                  │  Auth + middleware  │ │
                  └──┬────┬────┬────┬───┘ │
-                    │    │    │    │      │
-           ┌────────┤    │    │    └──────┤
+                    │    │    │    │     │
+           ┌────────┤    │    │    └─────┤
       PostgreSQL   Redis  S3/MinIO    Celery Worker
       :5432        :6379  :9000      (background)
 
