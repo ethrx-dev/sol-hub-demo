@@ -1,8 +1,8 @@
 """add_donations_table
 
-Revision ID: e8a4b67102e1
+Revision ID: 95fdd6aef342
 Revises: a1b2c3d4e5f6
-Create Date: 2026-07-14 12:47:22.319105
+Create Date: 2026-07-14 12:57:03.656353
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e8a4b67102e1'
+revision: str = '95fdd6aef342'
 down_revision: Union[str, None] = 'a1b2c3d4e5f6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
