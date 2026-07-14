@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -96,7 +97,8 @@ async def list_posts(
                 author_id=p.author_id, author_name=p.author.full_name or p.author.email,
                 author_avatar=p.author.avatar_url,
                 category_id=p.category_id, category_name=p.category_rel.name if p.category_rel else None,
-                tags=parse_tags(p.tags), status=p.status, is_featured=p.is_featured,
+                tags=parse_tags(p.tags), status=p.status, review_status=p.review_status,
+                review_notes=p.review_notes, is_featured=p.is_featured,
                 view_count=p.view_count, published_at=p.published_at,
                 created_at=p.created_at, updated_at=p.updated_at,
             )
@@ -139,7 +141,8 @@ async def create_post(body: CreateBlogPostRequest, db: AsyncSession = Depends(ge
         author_id=post.author_id, author_name=current_user.full_name or current_user.email,
         author_avatar=current_user.avatar_url,
         category_id=post.category_id, category_name=None,
-        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
         view_count=0, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -161,7 +164,8 @@ async def get_post_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -183,7 +187,8 @@ async def get_post(post_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )
@@ -217,7 +222,80 @@ async def update_post(post_id: uuid.UUID, body: UpdateBlogPostRequest, db: Async
         author_id=post.author_id, author_name=post.author.full_name or post.author.email,
         author_avatar=post.author.avatar_url,
         category_id=post.category_id, category_name=post.category_rel.name if post.category_rel else None,
-        tags=parse_tags(post.tags), status=post.status, is_featured=post.is_featured,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
+        view_count=post.view_count, published_at=post.published_at,
+        created_at=post.created_at, updated_at=post.updated_at,
+    )
+
+
+# ── Story endpoints (Feature 3: Post-Onboarding) ──
+
+
+class CreateStoryRequest(BaseModel):
+    content: str = Field(max_length=100000)
+
+
+@router.post("/stories", response_model=BlogPostResponse, status_code=status.HTTP_201_CREATED)
+async def create_story(body: CreateStoryRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("innovator", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only innovators can submit stories")
+    existing = await db.execute(
+        select(BlogPost).where(BlogPost.author_id == current_user.id, BlogPost.review_status.in_(["pending_review", "approved"]))
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You already have a story under review or approved")
+
+    import uuid
+    slug = slugify(f"story-{current_user.full_name or current_user.id}-{uuid.uuid4().hex[:6]}")
+    post = BlogPost(
+        title=f"My Story — {current_user.full_name or 'Untitled'}",
+        slug=slug,
+        content=body.content,
+        excerpt=body.content[:300] if len(body.content) > 300 else body.content,
+        author_id=current_user.id,
+        tags="story,onboarding",
+        status="draft",
+        review_status="pending_review",
+    )
+    db.add(post)
+    await db.flush()
+    await db.refresh(post)
+
+    from src.utils.notifications import notify_admins_new_story
+    await notify_admins_new_story(db, current_user, post)
+
+    return BlogPostResponse(
+        id=post.id, title=post.title, slug=post.slug, content=post.content,
+        excerpt=post.excerpt, cover_image=post.cover_image,
+        author_id=post.author_id, author_name=current_user.full_name or current_user.email,
+        author_avatar=current_user.avatar_url,
+        category_id=post.category_id, category_name=None,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
+        view_count=0, published_at=post.published_at,
+        created_at=post.created_at, updated_at=post.updated_at,
+    )
+
+
+@router.get("/stories/my", response_model=BlogPostResponse | None)
+async def get_my_story(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    result = await db.execute(
+        select(BlogPost).where(BlogPost.author_id == current_user.id, BlogPost.review_status != "none")
+        .options(selectinload(BlogPost.author))
+        .order_by(BlogPost.created_at.desc()).limit(1)
+    )
+    post = result.scalar_one_or_none()
+    if not post:
+        return None
+    return BlogPostResponse(
+        id=post.id, title=post.title, slug=post.slug, content=post.content,
+        excerpt=post.excerpt, cover_image=post.cover_image,
+        author_id=post.author_id, author_name=post.author.full_name or post.author.email,
+        author_avatar=post.author.avatar_url,
+        category_id=post.category_id, category_name=None,
+        tags=parse_tags(post.tags), status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
         view_count=post.view_count, published_at=post.published_at,
         created_at=post.created_at, updated_at=post.updated_at,
     )

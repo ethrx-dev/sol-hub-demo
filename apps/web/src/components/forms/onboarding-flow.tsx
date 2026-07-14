@@ -66,6 +66,9 @@ export function OnboardingFlow() {
   const handleComplete = async () => {
     setSubmitting(true);
     try {
+      if (role === "innovator" && data.story) {
+        await api.post("/blog/stories", { content: data.story }).catch(() => {});
+      }
       await api.patch("/users/me", {
         onboarding_completed: true,
         skills: data.skills?.split(",").map((s: string) => s.trim()).filter(Boolean) || undefined,
@@ -93,7 +96,7 @@ export function OnboardingFlow() {
 
   const role = user.role;
 
-  const totalSteps = 5;
+  const totalSteps = role === "innovator" ? 6 : 5;
 
   return (
     <div className="mx-auto max-w-lg">
@@ -101,7 +104,11 @@ export function OnboardingFlow() {
       <div className="mb-6">
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
           <span>Step {step} of {totalSteps}</span>
-          <span>{["Welcome", "Your Role", "Record Video", "Profile", "All Set"][step - 1]}</span>
+          <span>{(
+            role === "innovator"
+              ? ["Welcome", "Your Role", "Record Video", "Profile", "Your Story", "All Set"]
+              : ["Welcome", "Your Role", "Record Video", "Profile", "All Set"]
+          )[step - 1]}</span>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: totalSteps }, (_, i) => (
@@ -276,8 +283,30 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {/* Step 5: All Set */}
-          {step === 5 && (
+          {/* Step 5: Your Story (innovator only) */}
+          {step === 5 && role === "innovator" && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">Share Your Story</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  What does regeneration mean to you? Tell us about your vision, your journey,
+                  and what drives you to create change.
+                </p>
+              </div>
+              <textarea
+                className="w-full min-h-[200px] rounded-lg border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Share your story..."
+                value={data.story || ""}
+                onChange={(e) => update("story", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Your story will be reviewed by the SOL team. This helps us match you with the right mentors and investors.
+              </p>
+            </div>
+          )}
+
+          {/* Step 5/6: All Set */}
+          {((step === 5 && role !== "innovator") || (step === 6 && role === "innovator")) && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center mb-2">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

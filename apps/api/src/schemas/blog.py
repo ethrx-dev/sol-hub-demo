@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from src.models.blog import PostStatus
+from src.models.blog import PostStatus, ReviewStatus
 
 
 class BlogCategoryResponse(BaseModel):
@@ -32,6 +32,8 @@ class BlogPostResponse(BaseModel):
     category_name: str | None = None
     tags: list[str] = []
     status: PostStatus = PostStatus.draft
+    review_status: ReviewStatus = ReviewStatus.none
+    review_notes: str | None = None
     is_featured: bool = False
     view_count: int = 0
     published_at: datetime | None = None

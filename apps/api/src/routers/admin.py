@@ -3,7 +3,9 @@ import uuid
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, status, Query, Header
+from pydantic import BaseModel
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 
 from src.config import settings
 from src.deps import DbSession, CurrentAdmin
@@ -15,6 +17,8 @@ from src.models.investment import Investment
 from src.models.group import Group
 from src.models.post import Post
 from src.models.resource import Resource
+from src.models.blog import BlogPost, ReviewStatus
+from src.schemas.blog import BlogPostResponse
 from src.schemas.admin import (
     AdminSeedRequest,
     ChangeRoleRequest,
@@ -482,3 +486,115 @@ async def admin_delete_resource(resource_id: uuid.UUID, db: DbSession, current_a
     await db.delete(resource)
     await db.flush()
     return {"detail": "Resource deleted successfully"}
+
+
+# ── Story Review (Feature 3: Post-Onboarding) ──────────────────────
+
+
+@router.get("/stories", response_model=PaginatedResponse[BlogPostResponse])
+async def list_stories(
+    db: DbSession,
+    current_admin: CurrentAdmin,
+    review_status: str | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+):
+    query = select(BlogPost).where(BlogPost.review_status != "none").options(
+        selectinload(BlogPost.author)
+    )
+    count_q = select(func.count(BlogPost.id)).where(BlogPost.review_status != "none")
+    if review_status:
+        query = query.where(BlogPost.review_status == review_status)
+        count_q = count_q.where(BlogPost.review_status == review_status)
+    total = await db.scalar(count_q)
+    result = await db.execute(query.order_by(BlogPost.created_at.desc()).offset(skip).limit(limit))
+    posts = result.scalars().all()
+    return {
+        "items": [
+            BlogPostResponse(
+                id=p.id, title=p.title, slug=p.slug, content=p.content,
+                excerpt=p.excerpt, cover_image=p.cover_image,
+                author_id=p.author_id, author_name=p.author.full_name or p.author.email,
+                author_avatar=p.author.avatar_url,
+                category_id=p.category_id, category_name=None,
+                tags=[t.strip() for t in p.tags.split(",") if t.strip()], status=p.status, review_status=p.review_status,
+                review_notes=p.review_notes, is_featured=p.is_featured,
+                view_count=p.view_count, published_at=p.published_at,
+                created_at=p.created_at, updated_at=p.updated_at,
+            )
+            for p in posts
+        ],
+        "total": total or 0, "skip": skip, "limit": limit,
+    }
+
+
+@router.post("/stories/{story_id}/approve", response_model=BlogPostResponse)
+async def approve_story(
+    story_id: uuid.UUID,
+    db: DbSession,
+    current_admin: CurrentAdmin,
+):
+    result = await db.execute(
+        select(BlogPost).where(BlogPost.id == story_id).options(selectinload(BlogPost.author))
+    )
+    post = result.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Story not found")
+    post.review_status = ReviewStatus.approved
+    post.reviewed_by_id = current_admin.id
+    post.reviewed_at = datetime.now(timezone.utc)
+    await db.flush()
+
+    from src.utils.notifications import notify_story_approved
+    await notify_story_approved(db, post.author, post)
+
+    return BlogPostResponse(
+        id=post.id, title=post.title, slug=post.slug, content=post.content,
+        excerpt=post.excerpt, cover_image=post.cover_image,
+        author_id=post.author_id, author_name=post.author.full_name or post.author.email,
+        author_avatar=post.author.avatar_url,
+        category_id=post.category_id, category_name=None,
+        tags=[t.strip() for t in post.tags.split(",") if t.strip()], status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
+        view_count=post.view_count, published_at=post.published_at,
+        created_at=post.created_at, updated_at=post.updated_at,
+    )
+
+
+class StoryRejectRequest(BaseModel):
+    notes: str = ""
+
+
+@router.post("/stories/{story_id}/reject", response_model=BlogPostResponse)
+async def reject_story(
+    story_id: uuid.UUID,
+    body: StoryRejectRequest,
+    db: DbSession,
+    current_admin: CurrentAdmin,
+):
+    result = await db.execute(
+        select(BlogPost).where(BlogPost.id == story_id).options(selectinload(BlogPost.author))
+    )
+    post = result.scalar_one_or_none()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Story not found")
+    post.review_status = ReviewStatus.rejected
+    post.review_notes = body.notes
+    post.reviewed_by_id = current_admin.id
+    post.reviewed_at = datetime.now(timezone.utc)
+    await db.flush()
+
+    from src.utils.notifications import notify_story_rejected
+    await notify_story_rejected(db, post.author, post, body.notes)
+
+    return BlogPostResponse(
+        id=post.id, title=post.title, slug=post.slug, content=post.content,
+        excerpt=post.excerpt, cover_image=post.cover_image,
+        author_id=post.author_id, author_name=post.author.full_name or post.author.email,
+        author_avatar=post.author.avatar_url,
+        category_id=post.category_id, category_name=None,
+        tags=[t.strip() for t in post.tags.split(",") if t.strip()], status=post.status, review_status=post.review_status,
+        review_notes=post.review_notes, is_featured=post.is_featured,
+        view_count=post.view_count, published_at=post.published_at,
+        created_at=post.created_at, updated_at=post.updated_at,
+    )

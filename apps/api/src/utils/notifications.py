@@ -1,5 +1,6 @@
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.config import settings
 from src.models.notification import Notification
 from src.models.user import User
 
@@ -47,6 +48,77 @@ async def notify_admins_new_user(db: AsyncSession, user: User):
     await send_email(
         to=settings.NOTIFICATION_EMAIL or "love@spacesoflearning.com",
         subject=f"New Member: {user.full_name}",
+        body=html,
+    )
+
+
+async def notify_admins_new_story(db: AsyncSession, user: User, post):
+    admins = await db.execute(
+        select(User).where(User.role == "admin")
+    )
+    admins = admins.scalars().all()
+    for admin in admins:
+        await create_notification(
+            db=db,
+            user_id=str(admin.id),
+            title="New Story Submission",
+            message=f"{user.full_name} submitted a story for review.",
+            notification_type="story_submitted",
+        )
+    from src.utils.email import send_email
+    from src.config import settings
+    html = (
+        f"<p>A new story has been submitted for review.</p>"
+        f"<p>Author: <strong>{user.full_name}</strong> ({user.email})</p>"
+        f"<p>Log into the admin panel to review it.</p>"
+    )
+    await send_email(
+        to=settings.NOTIFICATION_EMAIL or "love@spacesoflearning.com",
+        subject=f"New Story: {user.full_name}",
+        body=html,
+    )
+
+
+async def notify_story_approved(db: AsyncSession, user: User, post):
+    await create_notification(
+        db=db,
+        user_id=str(user.id),
+        title="Your Story Was Approved!",
+        message=f"Your story has been approved. You can now access all features.",
+        notification_type="story_approved",
+    )
+    from src.utils.email import send_email
+    html = (
+        f"<p>Congratulations <strong>{user.full_name}</strong>!</p>"
+        f"<p>Your story has been reviewed and approved by the SOL team.</p>"
+        f"<p><a href='{settings.FRONTEND_URL}/innovator/story'>View your approved story</a></p>"
+    )
+    await send_email(
+        to=user.email,
+        subject="Your SOL Story Was Approved!",
+        body=html,
+    )
+
+
+async def notify_story_rejected(db: AsyncSession, user: User, post, notes: str | None = None):
+    await create_notification(
+        db=db,
+        user_id=str(user.id),
+        title="Your Story Needs Revision",
+        message=f"Your story was reviewed with feedback. Please revise and resubmit.",
+        notification_type="story_rejected",
+    )
+    from src.utils.email import send_email
+    notes_html = f"<p><strong>Feedback:</strong> {notes}</p>" if notes else ""
+    html = (
+        f"<p>Hi <strong>{user.full_name}</strong>,</p>"
+        f"<p>Your story has been reviewed and we'd like to see some revisions before approval.</p>"
+        f"{notes_html}"
+        f"<p><a href='{settings.FRONTEND_URL}/innovator/story'>Edit your story</a> and resubmit when ready.</p>"
+    )
+    await send_email(
+        to=user.email,
+        subject="Your SOL Story — Feedback Received",
         body=html,
     )
 

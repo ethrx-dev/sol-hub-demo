@@ -75,6 +75,7 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/admin/pillar-submissions", label: "Pillar Submissions", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/admin/groups", label: "Groups", icon: <Users className="h-4 w-4" /> },
     { href: "/admin/posts", label: "Posts", icon: <BookOpen className="h-4 w-4" /> },
+    { href: "/admin/stories", label: "Stories", icon: <BookOpen className="h-4 w-4" /> },
     { href: "/admin/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
     { href: "/resources", label: "Resources", icon: <BookOpen className="h-4 w-4" /> },
