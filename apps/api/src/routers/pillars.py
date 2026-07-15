@@ -125,7 +125,9 @@ async def submit_video(
     storage_key = f"pillar-submissions/{pillar}/{uuid.uuid4()}"
     url = await upload_file(storage_key, data, mime)
 
-    direct_url = f"{settings.S3_PUBLIC_URL}/{settings.S3_BUCKET}/{storage_key}"
+    from src.utils.storage import get_public_url
+
+    direct_url = get_public_url(storage_key)
 
     submission = PillarSubmission(
         id=str(uuid.uuid4()),
@@ -178,12 +180,12 @@ async def list_submissions(
     result = await db.execute(query.offset(skip).limit(limit))
     submissions = result.scalars().all()
 
-    from src.utils.storage import generate_presigned_url
+    from src.utils.storage import get_public_url
 
     items = []
     for s in submissions:
         if s.storage_key:
-            url = generate_presigned_url(s.storage_key)
+            url = get_public_url(s.storage_key)
         else:
             url = s.storage_url
         profile = s.user.profile if s.user and s.user.profile else None

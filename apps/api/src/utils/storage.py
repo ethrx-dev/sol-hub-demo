@@ -37,7 +37,15 @@ async def upload_file(storage_key: str, data: bytes, content_type: str) -> str:
         Body=data,
         ContentType=content_type,
     )
-    return generate_presigned_url(storage_key)
+    return get_public_url(storage_key)
+
+
+def get_public_url(storage_key: str) -> str:
+    """Return a stable, non-expiring URL served through the API (/api/files/...).
+
+    This avoids leaking S3 credentials and sidesteps expiring presigned URLs.
+    """
+    return f"/api/files/{storage_key}"
 
 
 def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
@@ -48,6 +56,15 @@ def generate_presigned_url(storage_key: str, expires_in: int = 3600) -> str:
         Params={"Bucket": settings.S3_BUCKET, "Key": storage_key},
         ExpiresIn=expires_in,
     )
+
+
+async def get_object_bytes(storage_key: str) -> tuple[bytes, str | None]:
+    """Fetch an object's bytes and content type from S3 (used by the file route)."""
+    client = get_s3_client()
+    resp = client.get_object(Bucket=settings.S3_BUCKET, Key=storage_key)
+    body = resp["Body"].read()
+    content_type = resp.get("ContentType")
+    return body, content_type
 
 
 async def delete_file(storage_key: str) -> None:
