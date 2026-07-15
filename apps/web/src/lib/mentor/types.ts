@@ -1,25 +1,29 @@
-export type MentorType = "psychologist" | "professor" | "coach";
+// Stable internal keys — these NEVER change once data is stored.
+// The human-facing label/description can be renamed freely without
+// breaking stored data, validation, or matching logic.
+export type MentorType = "psych" | "prof" | "coach";
 
 export const MENTOR_TYPES: { value: MentorType; label: string; description: string }[] = [
   {
-    value: "psychologist",
-    label: "Psychologist",
+    value: "psych",
+    label: "Psychologist", // display only — rename freely
     description: "Help innovators navigate mindset, purpose, and emotional resilience",
   },
   {
-    value: "professor",
-    label: "Professor",
+    value: "prof",
+    label: "Professor", // display only — rename freely
     description: "Provide structured frameworks, research-backed guidance, and academic rigor",
   },
   {
     value: "coach",
-    label: "Coach",
+    label: "Coach", // display only — rename freely
     description: "Drive accountability, execution, and practical skill-building",
   },
 ];
 
-export const MENTOR_TYPE_QUESTIONS: Record<MentorType, string[]> = {
-  psychologist: [
+// Single source of truth for the 9 guided Q&A questions per mentor type.
+export const MENTOR_GUIDED_QUESTIONS: Record<MentorType, string[]> = {
+  psych: [
     "What emotional patterns do you notice holding innovators back?",
     "How do you help someone reconnect with their core purpose?",
     "What practices do you use to build psychological safety in relationships?",
@@ -30,7 +34,7 @@ export const MENTOR_TYPE_QUESTIONS: Record<MentorType, string[]> = {
     "What's your approach when an innovator's values conflict with their strategy?",
     "How do you sustain your own wellbeing while holding space for others?",
   ],
-  professor: [
+  prof: [
     "What frameworks or models do you rely on most for early-stage ventures?",
     "How do you structure a research-backed validation process?",
     "What academic principles translate best to real-world innovation?",
@@ -54,13 +58,14 @@ export const MENTOR_TYPE_QUESTIONS: Record<MentorType, string[]> = {
   ],
 };
 
-export const VIDEO_QUESTIONS: Record<MentorType, string[]> = {
-  psychologist: [
+// 3 on-screen questions shown during the 90-second video recording.
+export const MENTOR_VIDEO_QUESTIONS: Record<MentorType, string[]> = {
+  psych: [
     "What emotional patterns do you see holding innovators back?",
     "How do you create psychological safety in mentoring relationships?",
     "What's your approach when someone's values conflict with their strategy?",
   ],
-  professor: [
+  prof: [
     "What frameworks do you use to validate early-stage ventures?",
     "How do you teach systems thinking to first-time innovators?",
     "What metrics matter most for assessing venture viability?",
@@ -72,10 +77,16 @@ export const VIDEO_QUESTIONS: Record<MentorType, string[]> = {
   ],
 };
 
-export function getMentorTypeLabel(type: MentorType): string {
-  return MENTOR_TYPES.find((t) => t.value === type)?.label ?? type;
+export function getMentorTypeLabel(type: MentorType | string | null | undefined): string {
+  if (!type) return "";
+  return MENTOR_TYPES.find((t) => t.value === type)?.label ?? String(type);
 }
 
-export function getMentorTypeDescription(type: MentorType): string {
+export function getMentorTypeDescription(type: MentorType | string | null | undefined): string {
+  if (!type) return "";
   return MENTOR_TYPES.find((t) => t.value === type)?.description ?? "";
+}
+
+export function isValidMentorType(type: string | null | undefined): type is MentorType {
+  return !!type && MENTOR_TYPES.some((t) => t.value === type);
 }

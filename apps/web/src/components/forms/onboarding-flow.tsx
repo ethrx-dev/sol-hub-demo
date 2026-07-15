@@ -21,7 +21,7 @@ import { useTourStore } from "@/src/stores/tour-store";
 import { Compass, Radio, Check } from "lucide-react";
 import {
   MENTOR_TYPES,
-  VIDEO_QUESTIONS,
+  MENTOR_GUIDED_QUESTIONS,
   MentorType,
 } from "@/src/lib/mentor/types";
 
@@ -57,42 +57,6 @@ const WELCOME_STEPS = [
   { title: "Find Your Match", desc: "Get paired with the right people based on your goals and expertise." },
   { title: "Build & Grow", desc: "Access workspaces, track milestones, and bring your vision to life." },
 ];
-
-const MENTOR_GUIDED_QUESTIONS: Record<MentorType, string[]> = {
-  psychologist: [
-    "What emotional patterns do you notice holding innovators back?",
-    "How do you help someone reconnect with their core purpose?",
-    "What practices do you use to build psychological safety in relationships?",
-    "How do you work with fear of failure or imposter syndrome?",
-    "Describe a time you helped someone through a major identity shift",
-    "What boundaries do you maintain in deep mentoring relationships?",
-    "How do you measure progress in inner work?",
-    "What's your approach when an innovator's values conflict with their strategy?",
-    "How do you sustain your own wellbeing while holding space for others?",
-  ],
-  professor: [
-    "What frameworks or models do you rely on most for early-stage ventures?",
-    "How do you structure a research-backed validation process?",
-    "What academic principles translate best to real-world innovation?",
-    "Describe how you teach systems thinking to first-time founders",
-    "What metrics do you track to assess venture viability?",
-    "How do you balance theoretical rigor with startup speed?",
-    "What's your approach to curriculum design for mentor-led learning?",
-    "How do you evaluate whether a problem is worth solving?",
-    "What literatures or disciplines most inform your mentoring?",
-  ],
-  coach: [
-    "What accountability structures work best for your clients?",
-    "How do you break down a 90-day plan into weekly actions?",
-    "Describe your approach when someone consistently misses commitments",
-    "What tools or templates do you provide for execution tracking?",
-    "How do you handle scope creep or shiny object syndrome?",
-    "What's your process for skill-gap identification and closure?",
-    "How do you measure and celebrate incremental wins?",
-    "Describe a coaching engagement that transformed someone's trajectory",
-    "How do you maintain momentum through the messy middle?",
-  ],
-};
 
 export function OnboardingFlow() {
   const { user, refreshUser } = useAuth();

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MENTOR_VIDEO_QUESTIONS, MentorType } from "@/src/lib/mentor/types";
 
 type Pillar = "innovators" | "mentors" | "investors";
-type MentorType = "psychologist" | "professor" | "coach";
 
 interface Question {
   label: string;
@@ -30,23 +30,13 @@ const DEFAULT_QUESTIONS: Record<Pillar, Question[]> = {
   ],
 };
 
-const MENTOR_VIDEO_QUESTIONS: Record<MentorType, Question[]> = {
-  psychologist: [
-    { label: "What emotional patterns do you see holding innovators back?" },
-    { label: "How do you create psychological safety in mentoring relationships?" },
-    { label: "What's your approach when someone's values conflict with their strategy?" },
-  ],
-  professor: [
-    { label: "What frameworks do you use to validate early-stage ventures?" },
-    { label: "How do you teach systems thinking to first-time innovators?" },
-    { label: "What metrics matter most for assessing venture viability?" },
-  ],
-  coach: [
-    { label: "What accountability structures drive consistent execution?" },
-    { label: "How do you handle scope creep and maintain focus?" },
-    { label: "What's your process for identifying and closing skill gaps?" },
-  ],
-};
+// Convert the string[] question bank into the {label} shape used by the UI.
+const mentorVideoQuestions: Record<MentorType, Question[]> = Object.fromEntries(
+  (Object.keys(MENTOR_VIDEO_QUESTIONS) as MentorType[]).map((k) => [
+    k,
+    MENTOR_VIDEO_QUESTIONS[k].map((label) => ({ label })),
+  ])
+) as Record<MentorType, Question[]>;
 
 type RecorderState = "idle" | "countdown" | "recording" | "preview" | "uploading" | "done";
 
@@ -70,7 +60,7 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
   const recordingStartedRef = useRef(false);
 
   const questions = pillar === "mentors" && mentorType
-    ? MENTOR_VIDEO_QUESTIONS[mentorType]
+    ? mentorVideoQuestions[mentorType]
     : DEFAULT_QUESTIONS[pillar];
 
   const cleanup = useCallback(() => {

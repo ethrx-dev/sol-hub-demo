@@ -90,7 +90,7 @@ async def submit_video(
 
     # Validate mentor_type if provided (only for mentors pillar)
     if mentor_type and pillar == "mentors":
-        valid_types = ["psychologist", "professor", "coach"]
+        valid_types = ["psych", "prof", "coach"]
         if mentor_type not in valid_types:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
