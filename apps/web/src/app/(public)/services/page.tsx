@@ -45,8 +45,7 @@ export default function ServicesPage() {
   const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
-    fetch(`${apiBase}/pages/services`)
+    fetch("/api/pages/services")
       .then((r) => {
         if (!r.ok) throw new Error("Not found");
         return r.json();
