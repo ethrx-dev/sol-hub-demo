@@ -149,3 +149,50 @@ async def notify_admins_new_project(db: AsyncSession, project, innovator: User):
         subject=f"New Project: {project.title}",
         body=html,
     )
+
+
+async def notify_whitney_quality_match(
+    db: AsyncSession,
+    project_title: str,
+    innovator_name: str,
+    mentor_name: str,
+    score: int,
+    mentor_type: str | None = None,
+) -> None:
+    """Notify Whitney when a high-quality mentor match is created.
+
+    Sends an in-app notification to Whitney's admin user (if found) plus an email.
+    """
+    from src.config import settings
+    from src.utils.email import send_email
+
+    whitney_email = settings.WHITNEY_EMAIL
+    type_label = f" ({mentor_type})" if mentor_type else ""
+
+    # In-app notification to Whitney's user record, if it exists.
+    result = await db.execute(select(User).where(User.email == whitney_email))
+    whitney = result.scalars().first()
+    if whitney:
+        await create_notification(
+            db=db,
+            user_id=str(whitney.id),
+            title="High-Quality Match Created",
+            message=(
+                f"{innovator_name} requested a match with {mentor_name}{type_label} "
+                f"for '{project_title}' (compatibility score {score})."
+            ),
+            notification_type="quality_match",
+        )
+
+    html = (
+        f"<p>A high-quality mentor match was created.</p>"
+        f"<p>Project: <strong>{project_title}</strong></p>"
+        f"<p>Innovator: {innovator_name}</p>"
+        f"<p>Mentor: {mentor_name}{type_label}</p>"
+        f"<p>Compatibility score: <strong>{score}</strong></p>"
+    )
+    await send_email(
+        to=whitney_email,
+        subject=f"High-Quality Match: {mentor_name} ↔ {project_title}",
+        body=html,
+    )

@@ -12,6 +12,7 @@ from src.schemas.match import MatchCreateRequest, MatchUpdateRequest, MatchRespo
 from src.schemas.common import PaginatedResponse
 from src.utils.email import send_match_notification
 from src.utils.notifications import create_notification
+from src.utils.notifications import notify_whitney_quality_match
 from src.schemas.match import MatchSuggestionResponse
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
@@ -153,6 +154,24 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
         matched_user = await db.get(User, mentor_id)
     elif investor_id:
         matched_user = await db.get(User, investor_id)
+
+    # High-quality match alert: compute a quick compatibility score for mentor
+    # matches and notify Whitney when it crosses the threshold.
+    QUALITY_THRESHOLD = 70
+    if mentor_id and matched_user:
+        score = _quick_match_score(project, matched_user, innovator)
+        mentor_type = None
+        if matched_user.role_specific_data:
+            mentor_type = matched_user.role_specific_data.get("mentor_type")
+        if score >= QUALITY_THRESHOLD:
+            await notify_whitney_quality_match(
+                db=db,
+                project_title=project.title,
+                innovator_name=innovator.full_name if innovator else "an innovator",
+                mentor_name=matched_user.full_name,
+                score=score,
+                mentor_type=mentor_type,
+            )
 
     return MatchResponse(
         id=str(match.id),
@@ -335,6 +354,47 @@ def calculate_guided_similarity(user_responses: dict, innovator_responses: dict)
 
     # Max 25 points for guided answer similarity
     return min(int((matches / len(common_keys)) * 25), 25)
+
+
+def _quick_match_score(project, mentor: User, innovator: User | None) -> int:
+    """Compute a mentor↔project compatibility score (0-100) for Whitney alerts.
+
+    Mirrors the factor weighting used in get_match_suggestions:
+    sector overlap (25 each), skill match (20), mentor-type compatibility
+    (+30 exact / +10 partial), guided-answer similarity (up to 25).
+    """
+    score = 0
+
+    project_sectors = set()
+    if project.sector:
+        project_sectors.add(project.sector.lower())
+    if project.sub_sector:
+        project_sectors.add(project.sub_sector.lower())
+
+    user_sectors = {s.lower() for s in (mentor.sectors_of_interest or [])}
+    common_sectors = project_sectors & user_sectors
+    score += len(common_sectors) * 25
+
+    user_skills = {s.lower() for s in (mentor.skills or [])}
+    if project.sub_sector and project.sub_sector.lower() in user_skills:
+        score += 20
+
+    mentor_type = mentor.role_specific_data.get("mentor_type") if mentor.role_specific_data else None
+    preferred_type = (
+        innovator.role_specific_data.get("mentor_type")
+        if innovator and innovator.role_specific_data
+        else None
+    )
+    if mentor_type and preferred_type:
+        if mentor_type == preferred_type:
+            score += 30
+        else:
+            score += 10
+
+    if mentor.onboarding_responses and innovator and innovator.onboarding_responses:
+        score += calculate_guided_similarity(mentor.onboarding_responses, innovator.onboarding_responses)
+
+    return min(score, 100)
 
 
 @router.get("/{match_id}", response_model=MatchResponse)
