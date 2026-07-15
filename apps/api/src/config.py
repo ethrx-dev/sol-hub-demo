@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "SOL Hub <noreply@solhub.com>"
     NOTIFICATION_EMAIL: str = "love@spacesoflearning.com"
-    WHITNEY_EMAIL: str = "admin@solvearth.org"
-    MENTOR_ALERT_EMAILS: str = "admin@solvearth.org,tbuck303@gmail.com"
+    WHITNEY_EMAIL: str = "Whitney8880@gmail.com"
+    MENTOR_ALERT_EMAILS: str = "Whitney8880@gmail.com,tbuck303@gmail.com"
     FRONTEND_URL: str = "http://localhost:3000"
 
     ENVIRONMENT: str = "development"
