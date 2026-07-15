@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FolderKanban, Video, Users, Play } from "lucide-react";
+import { FolderKanban, Video, Users, Play, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { api } from "@/src/lib/api-client";
+import { getMentorTypeLabel } from "@/src/lib/mentor/types";
 
 const PILLAR_LABELS: Record<string, string> = {
   innovators: "Innovator",
@@ -24,6 +25,7 @@ export default function AdminPillarSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const fetch = async (pillar?: string) => {
     setLoading(true);
@@ -40,6 +42,9 @@ export default function AdminPillarSubmissionsPage() {
   };
 
   useEffect(() => { fetch(); }, []);
+
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => (prev === id ? null : id));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -92,52 +97,88 @@ export default function AdminPillarSubmissionsPage() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {submissions.map((s) => (
-            <div key={s.id} className="rounded-lg border bg-white shadow-sm overflow-hidden">
-              <div className="relative bg-black">
-                {playing === s.id && s.storageUrl ? (
-                  <video
-                    src={s.storageUrl}
-                    controls
-                    playsInline
-                    className="w-full aspect-[4/3] object-contain"
-                  />
-                ) : (
-                  <div className="w-full aspect-[4/3] flex items-center justify-center bg-muted relative">
-                    <Video className="h-12 w-12 text-muted-foreground/40" />
-                    {s.storageUrl && (
-                      <button
-                        onClick={() => setPlaying(s.id)}
-                        className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors group"
-                      >
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 shadow-lg group-hover:bg-primary transition-colors">
-                          <Play className="h-6 w-6 text-white ml-0.5" />
-                        </div>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="p-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className={`text-xs ${PILLAR_COLORS[s.pillar] || ""}`}>
-                    {PILLAR_LABELS[s.pillar] || s.pillar}
-                  </Badge>
-                  {s.userName && (
-                    <span className="text-sm font-medium">{s.userName}</span>
+          {submissions.map((s) => {
+            const mentorLabel = s.mentorType ? getMentorTypeLabel(s.mentorType) : null;
+            const guidedAnswers =
+              s.onboardingResponses?.guided_answers ||
+              s.roleSpecificData?.guided_answers ||
+              null;
+            const isExpanded = expanded === s.id;
+
+            return (
+              <div key={s.id} className="rounded-lg border bg-white shadow-sm overflow-hidden">
+                <div className="relative bg-black">
+                  {playing === s.id && s.storageUrl ? (
+                    <video
+                      src={s.storageUrl}
+                      controls
+                      playsInline
+                      className="w-full aspect-[4/3] object-contain"
+                    />
+                  ) : (
+                    <div className="w-full aspect-[4/3] flex items-center justify-center bg-muted relative">
+                      <Video className="h-12 w-12 text-muted-foreground/40" />
+                      {s.storageUrl && (
+                        <button
+                          onClick={() => setPlaying(s.id)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors group"
+                        >
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 shadow-lg group-hover:bg-primary transition-colors">
+                            <Play className="h-6 w-6 text-white ml-0.5" />
+                          </div>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {s.createdAt ? new Date(s.createdAt).toLocaleString() : "N/A"}
-                  {" · "}
-                  {(s.videoSize / 1024 / 1024).toFixed(1)} MB
-                </p>
-                {s.userEmail && (
-                  <p className="text-xs text-muted-foreground truncate">{s.userEmail}</p>
-                )}
+                <div className="p-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={`text-xs ${PILLAR_COLORS[s.pillar] || ""}`}>
+                      {PILLAR_LABELS[s.pillar] || s.pillar}
+                    </Badge>
+                    {mentorLabel && (
+                      <Badge variant="secondary" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/20">
+                        {mentorLabel}
+                      </Badge>
+                    )}
+                    {s.userName && (
+                      <span className="text-sm font-medium">{s.userName}</span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {s.createdAt ? new Date(s.createdAt).toLocaleString() : "N/A"}
+                    {" · "}
+                    {(s.videoSize / 1024 / 1024).toFixed(1)} MB
+                  </p>
+                  {s.userEmail && (
+                    <p className="text-xs text-muted-foreground truncate">{s.userEmail}</p>
+                  )}
+
+                  {mentorLabel && guidedAnswers && Object.keys(guidedAnswers).length > 0 && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => toggleExpand(s.id)}
+                        className="flex w-full items-center justify-between rounded-md border bg-secondary/30 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <span>View Guided Answers ({Object.keys(guidedAnswers).length})</span>
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                      {isExpanded && (
+                        <div className="mt-2 space-y-2 rounded-md border bg-secondary/20 p-3">
+                          {Object.entries(guidedAnswers).map(([key, val], i) => (
+                            <div key={key} className="text-xs">
+                              <p className="font-medium text-foreground">Q{i + 1}</p>
+                              <p className="text-muted-foreground whitespace-pre-wrap">{String(val)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -163,7 +163,9 @@ async def list_submissions(
     if current_user.role not in ("admin", "super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
-    query = select(PillarSubmission).options(selectinload(PillarSubmission.user)).order_by(PillarSubmission.created_at.desc())
+    query = select(PillarSubmission).options(
+        selectinload(PillarSubmission.user).selectinload(User.profile)
+    ).order_by(PillarSubmission.created_at.desc())
     if pillar:
         query = query.where(PillarSubmission.pillar == pillar)
 
@@ -184,6 +186,7 @@ async def list_submissions(
             url = generate_presigned_url(s.storage_key)
         else:
             url = s.storage_url
+        profile = s.user.profile if s.user and s.user.profile else None
         items.append({
             "id": s.id,
             "pillar": s.pillar,
@@ -194,6 +197,8 @@ async def list_submissions(
             "userName": s.user.full_name if s.user else None,
             "userEmail": s.user.email if s.user else None,
             "createdAt": s.created_at.isoformat() if s.created_at else None,
+            "roleSpecificData": profile.role_specific_data if profile else None,
+            "onboardingResponses": profile.onboarding_responses if profile else None,
         })
 
     return {"items": items, "total": total}

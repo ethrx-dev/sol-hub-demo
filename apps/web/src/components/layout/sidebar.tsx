@@ -35,6 +35,7 @@ const roleLinks: Record<UserRole, SidebarLink[]> = {
     { href: "/innovator/projects", label: "My Projects", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/innovator/projects/new", label: "Submit Idea", icon: <Lightbulb className="h-4 w-4" /> },
     { href: "/innovator/matches", label: "My Matches", icon: <Handshake className="h-4 w-4" /> },
+    { href: "/innovator/matches/suggestions", label: "Find Mentor", icon: <Search className="h-4 w-4" /> },
     { href: "/workspaces", label: "Workspaces", icon: <FolderKanban className="h-4 w-4" /> },
     { href: "/notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
     { href: "/hub", label: "Hub", icon: <Users className="h-4 w-4" /> },
