@@ -71,6 +71,7 @@ PILLAR_ROLE_MAP = {
 async def submit_video(
     pillar: str = Form(...),
     video: UploadFile = File(...),
+    mentor_type: str | None = Form(None),
     db: DbSession = None,
     current_user: User = Depends(get_current_user),
 ):
@@ -85,6 +86,20 @@ async def submit_video(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Only {expected_role}s can submit to the {pillar} pillar",
+        )
+
+    # Validate mentor_type if provided (only for mentors pillar)
+    if mentor_type and pillar == "mentors":
+        valid_types = ["psychologist", "professor", "coach"]
+        if mentor_type not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid mentor_type. Must be one of: {', '.join(valid_types)}",
+            )
+    elif mentor_type and pillar != "mentors":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="mentor_type is only valid for mentors pillar",
         )
 
     if not video.content_type or not video.content_type.startswith("video/"):
@@ -115,6 +130,7 @@ async def submit_video(
     submission = PillarSubmission(
         id=str(uuid.uuid4()),
         pillar=pillar,
+        mentor_type=mentor_type if pillar == "mentors" else None,
         video_size=len(data),
         user_id=current_user.id,
         storage_url=direct_url,
@@ -171,6 +187,7 @@ async def list_submissions(
         items.append({
             "id": s.id,
             "pillar": s.pillar,
+            "mentorType": s.mentor_type,
             "videoSize": s.video_size,
             "storageUrl": url,
             "userId": str(s.user_id) if s.user_id else None,

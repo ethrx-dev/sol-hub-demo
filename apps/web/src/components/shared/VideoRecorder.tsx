@@ -3,12 +3,16 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
 type Pillar = "innovators" | "mentors" | "investors";
+type MentorType = "psychologist" | "professor" | "coach";
 
 interface Question {
   label: string;
 }
 
-const QUESTIONS: Record<Pillar, Question[]> = {
+const SECONDS_PER_QUESTION = 30;
+const TOTAL_SECONDS = SECONDS_PER_QUESTION * 3;
+
+const DEFAULT_QUESTIONS: Record<Pillar, Question[]> = {
   innovators: [
     { label: "What's the problem? What do you feel is wrong?" },
     { label: "Describe your solution or why it's important to solve" },
@@ -26,12 +30,27 @@ const QUESTIONS: Record<Pillar, Question[]> = {
   ],
 };
 
-const SECONDS_PER_QUESTION = 30; // 30s per question = 90s total
-const TOTAL_SECONDS = SECONDS_PER_QUESTION * 3;
+const MENTOR_VIDEO_QUESTIONS: Record<MentorType, Question[]> = {
+  psychologist: [
+    { label: "What emotional patterns do you see holding innovators back?" },
+    { label: "How do you create psychological safety in mentoring relationships?" },
+    { label: "What's your approach when someone's values conflict with their strategy?" },
+  ],
+  professor: [
+    { label: "What frameworks do you use to validate early-stage ventures?" },
+    { label: "How do you teach systems thinking to first-time innovators?" },
+    { label: "What metrics matter most for assessing venture viability?" },
+  ],
+  coach: [
+    { label: "What accountability structures drive consistent execution?" },
+    { label: "How do you handle scope creep and maintain focus?" },
+    { label: "What's your process for identifying and closing skill gaps?" },
+  ],
+};
 
 type RecorderState = "idle" | "countdown" | "recording" | "preview" | "uploading" | "done";
 
-export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
+export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; mentorType?: MentorType }) {
   const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<RecorderState>("idle");
   const [activeQuestion, setActiveQuestion] = useState(0);
@@ -50,7 +69,9 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
   const cameraReadyRef = useRef(false);
   const recordingStartedRef = useRef(false);
 
-  const questions = QUESTIONS[pillar];
+  const questions = pillar === "mentors" && mentorType
+    ? MENTOR_VIDEO_QUESTIONS[mentorType]
+    : DEFAULT_QUESTIONS[pillar];
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -199,6 +220,9 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
     try {
       const formData = new FormData();
       formData.append("pillar", pillar);
+      if (mentorType) {
+        formData.append("mentor_type", mentorType);
+      }
       const ext = recordedBlob.type.includes("mp4") ? "mp4" : "webm";
       formData.append("video", recordedBlob, `intro.${ext}`);
 
@@ -221,7 +245,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       setError(message);
       setState("preview");
     }
-  }, [recordedBlob, pillar]);
+  }, [recordedBlob, pillar, mentorType]);
 
   const reset = useCallback(() => {
     cleanup();

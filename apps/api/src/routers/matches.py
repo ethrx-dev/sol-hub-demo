@@ -265,6 +265,13 @@ async def get_match_suggestions(
     if project.sub_sector:
         project_sectors.add(project.sub_sector.lower())
 
+    # Get innovator's preferred mentor type from their profile
+    innovator = await db.get(User, project.innovator_id)
+    preferred_mentor_type = None
+    if innovator and innovator.role_specific_data:
+        preferred_mentor_type = innovator.role_specific_data.get("mentor_type")
+    innovator_guided_answers = innovator.onboarding_responses if innovator else {}
+
     scored = []
     for u in users:
         score = 0
@@ -276,7 +283,21 @@ async def get_match_suggestions(
         if project.sub_sector and project.sub_sector.lower() in user_skills:
             score += 20
 
-        scored.append((u, min(score, 100)))
+        # Mentor-type compatibility scoring (only for mentor role)
+        mentor_type = None
+        if role == "mentor" and u.role_specific_data:
+            mentor_type = u.role_specific_data.get("mentor_type")
+            if mentor_type and preferred_mentor_type and mentor_type == preferred_mentor_type:
+                score += 30  # Strong bonus for exact mentor type match
+            elif mentor_type and preferred_mentor_type:
+                score += 10  # Partial bonus for any mentor type when innovator has preference
+
+        # Guided answer similarity scoring (if both have onboarding responses)
+        if u.onboarding_responses and innovator_guided_answers:
+            guided_score = calculate_guided_similarity(u.onboarding_responses, innovator_guided_answers)
+            score += guided_score
+
+        scored.append((u, min(score, 100), mentor_type))
 
     scored.sort(key=lambda x: x[1], reverse=True)
 
@@ -289,9 +310,31 @@ async def get_match_suggestions(
             skills=u.skills,
             sectors_of_interest=u.sectors_of_interest,
             score=s,
+            mentor_type=mt,
+            onboarding_responses=u.onboarding_responses if role == "mentor" else None,
         )
-        for u, s in scored[:20]
+        for u, s, mt in scored[:20]
     ]
+
+
+def calculate_guided_similarity(user_responses: dict, innovator_responses: dict) -> int:
+    """Calculate similarity score between guided Q&A responses (0-25 points)."""
+    if not user_responses or not innovator_responses:
+        return 0
+
+    common_keys = set(user_responses.keys()) & set(innovator_responses.keys())
+    if not common_keys:
+        return 0
+
+    matches = 0
+    for key in common_keys:
+        user_val = str(user_responses[key]).lower().strip()
+        innovator_val = str(innovator_responses[key]).lower().strip()
+        if user_val and innovator_val and user_val == innovator_val:
+            matches += 1
+
+    # Max 25 points for guided answer similarity
+    return min(int((matches / len(common_keys)) * 25), 25)
 
 
 @router.get("/{match_id}", response_model=MatchResponse)
