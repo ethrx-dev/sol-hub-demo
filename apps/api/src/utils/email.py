@@ -97,17 +97,33 @@ async def send_welcome_email(to: str, name: str, verification_token: str | None 
         </div>
         """
     body = f"""
-    <h2>Welcome to SOL Hub, {name}!</h2>
-    <p>You've joined a community of innovators, mentors, and conscious investors building the future together.</p>
+    <p>Welcome to Spaces of Learning.</p>
+    <p>
+      Before anything is asked of you&hellip;<br/>
+      before any role is named&hellip;<br/>
+      before any contribution is expected&hellip;
+    </p>
+    <p>you are first invited to be met.</p>
+    <p>
+      The Resonance Gateway exists for one purpose:<br/>
+      to create the conditions where what is already true can become visible.
+    </p>
+    <p>
+      From there, your contribution naturally comes into view.<br/>
+      Not by qualification.<br/>
+      Not by performance.<br/>
+      By resonance.
+    </p>
+    <p>Welcome.</p>
+    <p style="font-style:italic">&mdash; Whitney, Resonance Steward</p>
     {verify_section}
     <div style="text-align:center;margin:16px 0">
       <a href="{_app_url()}/onboarding" style="display:inline-block;padding:12px 24px;background-color:#729D64;color:#fff;text-decoration:none;border-radius:6px;font-weight:600">
-        Complete Your Profile
+        Begin
       </a>
     </div>
-    <p style="color:#6b7280;font-size:14px">Start by completing your profile so the community can find you.</p>
     """
-    await send_email(to, f"Welcome to SOL Hub, {name}!", body)
+    await send_email(to, "Welcome to Spaces of Learning", body)
 
 
 async def send_match_notification(to: str, project_title: str, match_type: str) -> None:

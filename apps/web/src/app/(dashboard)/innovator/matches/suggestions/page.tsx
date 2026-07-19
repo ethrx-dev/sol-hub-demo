@@ -80,7 +80,7 @@ export default function MentorSuggestionsPage() {
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Lightbulb className="mb-4 h-12 w-12" />
           <p className="text-lg font-medium">Select a project to see suggestions</p>
-          <p className="text-sm">We&apos;ll match you with mentors who fit your needs.</p>
+          <p className="text-sm">We&apos;ll reflect the mentors whose contribution resonates with yours.</p>
         </div>
       ) : loadingSuggestions ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

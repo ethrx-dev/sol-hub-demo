@@ -41,10 +41,10 @@ const FAQS = [
     q: "Is there a membership fee?",
     a: "Membership is currently free. We believe in providing access to education and community without financial barriers.",
   },
-  {
-    q: "Who can join?",
-    a: "Anyone who aligns with our mission of nurturing dreams into successful businesses is welcome. We have three pillars: Innovators, Mentors, and Conscious Investors.",
-  },
+    {
+      q: "Who can join?",
+      a: "Anyone ready to be met beyond their title. Within SOL, contribution takes many forms — as an innovator, a mentor, a collaborator, or a conscious investor. Which is yours comes into focus through reflection, not a checkbox.",
+    },
   {
     q: "What does membership include?",
     a: "Members gain access to our private social hub, mentorship training programs, community forums, events, resources, and the ability to connect with fellow members.",
@@ -67,20 +67,20 @@ export default function BecomeAMemberPage() {
           </div>
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">
-              Sign-Up to Join Our{" "}
-              <span className="text-primary">PMA</span>
+              Enter the{" "}
+              <span className="text-primary">Resonance Gateway</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground">
-              SPACES OF LEARNING is a Private Membership Association (PMA) — a private community
-              where innovators, mentors, and conscious investors come together to learn, grow, and
-              build successful businesses, protected under the rights of freedom of association.
+              SPACES OF LEARNING is a private community where innovators, mentors, and conscious
+              investors are first met — beyond titles, resumes, and ambition. Through resonance, the
+              most aligned path for your contribution is revealed, not assigned.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/register"
                 className="btn-sol btn-sol-primary uppercase text-sm"
               >
-                SIGN-UP Today!
+                Begin the Conversation
               </Link>
               <Link
                 href="/membership-agreement"
@@ -157,18 +157,18 @@ export default function BecomeAMemberPage() {
             {[
               {
                 step: "01",
-                title: "Read the Agreement",
-                desc: "Review our Membership Agreement to understand your rights and responsibilities as a private member.",
+                title: "Arrive",
+                desc: "Cross the threshold into SOL as a private member. No application, nothing to qualify.",
               },
               {
                 step: "02",
-                title: "Sign Up",
-                desc: "Create your account and agree to the membership terms. Choose your path as an Innovator, Mentor, or Investor.",
+                title: "Be Met",
+                desc: "Through the Resonance Gateway, Whitney holds a space of reflection where what you already carry can become visible.",
               },
               {
                 step: "03",
-                title: "Join the Community",
-                desc: "Access the private hub, connect with members, and start your journey with SOL.",
+                title: "Let it Come Into Focus",
+                desc: "From that clarity, your contribution, your relationships, and your next steps within SOL reveal themselves.",
               },
             ].map((item) => (
               <div key={item.step} className="relative text-center">
@@ -195,12 +195,12 @@ export default function BecomeAMemberPage() {
           <p className="mt-3 text-muted-foreground">
             Stay informed about events, opportunities, and community updates.
           </p>
-          <Link
-            href="/register"
-            className="btn-sol btn-sol-primary mt-8 inline-block uppercase text-sm"
-          >
-            SIGN-UP Today!
-          </Link>
+            <Link
+              href="/register"
+              className="btn-sol btn-sol-primary mt-8 inline-block uppercase text-sm"
+            >
+              Begin the Conversation
+            </Link>
         </div>
       </section>
 
@@ -230,15 +230,15 @@ export default function BecomeAMemberPage() {
           <div className="flex justify-center mb-6">
             <img src="/sol-shape-gardenie.png" alt="" className="h-12 w-auto opacity-30" />
           </div>
-          <h2 className="text-4xl font-bold font-heading">Ready to Join?</h2>
+          <h2 className="text-4xl font-bold font-heading">Ready to Be Met?</h2>
           <p className="mt-3 text-muted-foreground">
-            Become a member of SOL PMA and start your journey today.
+            Step into SOL and let your contribution come into focus.
           </p>
           <Link
             href="/register"
             className="btn-sol btn-sol-primary mt-8 inline-block uppercase text-sm"
           >
-            Become A Member
+            Enter the Gateway
           </Link>
         </div>
       </section>

@@ -139,16 +139,16 @@ export function OnboardingFlow() {
 
   if (role === "innovator") {
     totalSteps = 6;
-    stepLabels.push("Welcome", "Your Role", "Record Video", "Profile", "Your Story", "All Set");
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "Your Story", "All Set");
   } else if (role === "mentor") {
-    totalSteps = 7; // Welcome, Role, Mentor Type, Record Video, Guided Q&A, Profile, All Set
-    stepLabels.push("Welcome", "Your Role", "Mentor Type", "Record Video", "Guided Q&A", "Profile", "All Set");
+    totalSteps = 7; // Welcome, Becoming Seen, Mentor Type, Record Video, Guided Q&A, Profile, All Set
+    stepLabels.push("Welcome", "Becoming Seen", "Mentor Type", "Record Video", "Guided Q&A", "Profile", "All Set");
   } else if (role === "investor") {
     totalSteps = 5;
-    stepLabels.push("Welcome", "Your Role", "Record Video", "Profile", "All Set");
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "All Set");
   } else {
     totalSteps = 5;
-    stepLabels.push("Welcome", "Your Role", "Record Video", "Profile", "All Set");
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "All Set");
   }
 
   return (
@@ -181,7 +181,7 @@ export function OnboardingFlow() {
               </div>
               <h2 className="text-2xl font-bold font-heading">Welcome to SOL!</h2>
               <p className="text-sm text-muted-foreground">
-                You&apos;re now a Private Member of Spaces of Learning. Here&apos;s what you can do:
+                Before any title is named, we&apos;d like to meet you as you are.
               </p>
               <div className="space-y-3 text-left mt-4">
                 {WELCOME_STEPS.map((s, i) => (
@@ -199,7 +199,7 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {/* Step 2: Your Role */}
+          {/* Step 2: Becoming Seen */}
           {step === 2 && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center mb-2">
@@ -209,15 +209,11 @@ export function OnboardingFlow() {
                   </span>
                 </div>
               </div>
-              <h2 className="text-2xl font-bold font-heading">You Joined as a {PILLAR_LABELS[role]}</h2>
+              <h2 className="text-2xl font-bold font-heading">What&apos;s true for you?</h2>
               <p className="text-sm text-muted-foreground">
-                {role === "innovator"
-                  ? "You'll submit ideas, get matched with mentors and investors, and track your project milestones."
-                  : role === "mentor"
-                  ? "You'll browse projects, share your expertise, and guide the next generation of entrepreneurs."
-                  : role === "investor"
-                  ? "You'll discover vetted projects, invest consciously, and track your portfolio."
-                  : "You'll explore the hub, connect with the community, and access SOL resources."}
+                There&apos;s no test here and nothing to qualify for. As we meet you, the shape of
+                your contribution &mdash; as an innovator, mentor, collaborator, or investor &mdash;
+                comes into view. You&apos;ll see what came into focus for you on the next step.
               </p>
             </div>
           )}
@@ -228,7 +224,7 @@ export function OnboardingFlow() {
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">What Type of Mentor Are You?</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This helps us tailor your questions and match you with the right innovators.
+                  So we can reflect your own way of guiding back to you.
                 </p>
               </div>
               <div className="grid gap-4">
@@ -291,7 +287,7 @@ export function OnboardingFlow() {
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">Tell Us More</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Answer a few questions to help us match you with the right innovators.
+                  Answer a few questions so we can reflect your way of guiding back to you.
                   <br />
                   <span className="font-medium text-primary">
                     {MENTOR_TYPES.find(t => t.value === data.mentorType)?.label} Focus
@@ -430,9 +426,9 @@ export function OnboardingFlow() {
                 value={data.story || ""}
                 onChange={(e) => update("story", e.target.value)}
               />
-              <p className="text-xs text-muted-foreground text-center">
-                Your story will be reviewed by the SOL team. This helps us match you with the right mentors and investors.
-              </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Your story helps us meet you as you are, so the collaborators and contributors who resonate with you can come into view.
+                </p>
             </div>
           )}
 

@@ -199,3 +199,26 @@ async def notify_whitney_quality_match(
             subject=f"High-Quality Match: {mentor_name} ↔ {project_title}",
             body=html,
         )
+
+
+async def notify_resonance_welcome(db: AsyncSession, user_id: str) -> None:
+    """Send the new member an in-app welcome from Whitney, Resonance Steward.
+
+    Mirrors the verbatim welcome copy used in the welcome email: the member is
+    first invited to be met, before any role is named or contribution expected.
+    """
+    message = (
+        "Welcome to Spaces of Learning. Before anything is asked of you — before "
+        "any role is named, before any contribution is expected — you are first "
+        "invited to be met. The Resonance Gateway exists to create the conditions "
+        "where what is already true can become visible. From there, your "
+        "contribution naturally comes into view. Not by qualification. Not by "
+        "performance. By resonance. — Whitney, Resonance Steward"
+    )
+    await create_notification(
+        db=db,
+        user_id=str(user_id),
+        title="Welcome — You Are Invited to Be Met",
+        message=message,
+        notification_type="resonance_welcome",
+    )
