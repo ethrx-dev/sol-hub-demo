@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass, Sparkles, HeartHandshake } from "lucide-react";
+import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass, Sparkles, HeartHandshake, Globe, Shield } from "lucide-react";
 
 interface Section {
   id: string;
@@ -491,6 +491,8 @@ const FEATURE_ICON_MAP: Record<string, ReactNode> = {
   users: <Users className="h-[41px] w-[41px]" />,
   dollar: <Handshake className="h-[41px] w-[41px]" />,
   shield: <Rocket className="h-[41px] w-[41px]" />,
+  graduation_cap: <GraduationCap className="h-[41px] w-[41px]" />,
+  globe: <Globe className="h-[41px] w-[41px]" />,
 };
 
 function FeatureCardsBlock({ data }: { data: Record<string, unknown> }) {
@@ -1104,6 +1106,110 @@ function CenteredStatementBlock({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+// ── Hero with dual CTAs (e.g. become-a-member entry) ──
+function HeroActionsBlock({ data }: { data: Record<string, unknown> }) {
+  const eyebrow = data.eyebrow as string;
+  const heading = data.heading as string;
+  const highlight = data.highlight as string;
+  const subtext = data.subtext as string;
+  const icon = data.icon as string;
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-sage-light/40 via-background to-sage-light/20 py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+        {icon && (
+          <div className="flex justify-center mb-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={icon} alt="" className="h-16 w-16" />
+          </div>
+        )}
+        <div className="mx-auto max-w-3xl text-center">
+          {eyebrow && (
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">
+              {heading} {highlight && <span className="text-primary">{highlight}</span>}
+            </h1>
+          )}
+          {!eyebrow && heading && (
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">{heading}</h1>
+          )}
+          {subtext && <p className="mt-6 text-lg text-muted-foreground">{subtext}</p>}
+          {buttons && buttons.length > 0 && (
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              {buttons.map((btn, i) =>
+                btn.style === "outline" ? (
+                  <Link
+                    key={i}
+                    href={btn.link}
+                    className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white"
+                  >
+                    {btn.label}
+                  </Link>
+                ) : (
+                  <Link key={i} href={btn.link} className="btn-sol btn-sol-primary uppercase text-sm">
+                    {btn.label}
+                  </Link>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Notice Banner (e.g. PMA notice) ──
+function NoticeBannerBlock({ data }: { data: Record<string, unknown> }) {
+  const text = data.text as string;
+  const linkText = data.link_text as string;
+  const linkUrl = data.link_url as string;
+
+  return (
+    <section className="bg-primary/5 py-8 border-y border-primary/10">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+        <p className="text-sm font-medium text-muted-foreground">
+          {text}
+          {linkText && linkUrl && (
+            <>
+              {" "}
+              <Link href={linkUrl} className="text-primary underline">
+                {linkText}
+              </Link>
+            </>
+          )}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ── FAQ List ──
+function FaqListBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const faqs = data.faqs as Array<{ q: string; a: string }> | undefined;
+
+  return (
+    <section className="bg-sage-light/30 py-20">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        {heading && (
+          <div className="text-center">
+            <h2 className="text-4xl font-bold font-heading">{heading}</h2>
+          </div>
+        )}
+        <div className="mt-12 space-y-6">
+          {(faqs || []).map((faq, i) => (
+            <div key={i} className="rounded-[0_10px_0_10px] bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-bold font-heading">{faq.q}</h3>
+              <p className="mt-2 text-muted-foreground">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => ReactNode> = {
   hero: HeroBlock,
   hero_slideshow: HeroSlideshowBlock,
@@ -1131,6 +1237,9 @@ const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => Re
   steward_intro: StewardIntroBlock,
   principle_cards: PrincipleCardsBlock,
   centered_statement: CenteredStatementBlock,
+  hero_actions: HeroActionsBlock,
+  notice_banner: NoticeBannerBlock,
+  faq_list: FaqListBlock,
 };
 
 export function DynamicPage({ sections }: { sections: Section[] }) {
