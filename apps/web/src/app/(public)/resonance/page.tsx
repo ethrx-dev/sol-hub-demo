@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { Sparkles, Compass, HeartHandshake } from "lucide-react";
 import { ResonanceStewardIntro } from "@/src/components/shared/resonance-steward-intro";
+import { DynamicPage } from "@/src/components/admin/section-renderers";
+
+interface CMSPage {
+  sections: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+}
 
 const PRINCIPLES = [
   {
@@ -21,6 +29,23 @@ const PRINCIPLES = [
 ];
 
 export default function ResonanceGatewayPage() {
+  const [cmsPage, setCmsPage] = useState<CMSPage | null | "loading">("loading");
+
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    fetch(`${apiBase}/pages/resonance`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Not found");
+        return r.json();
+      })
+      .then((data) => setCmsPage(data))
+      .catch(() => setCmsPage(null));
+  }, []);
+
+  if (cmsPage && cmsPage !== "loading" && cmsPage.sections && cmsPage.sections.length > 0) {
+    return <DynamicPage sections={cmsPage.sections} />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}

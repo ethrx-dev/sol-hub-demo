@@ -120,6 +120,18 @@ SEED_PAGES = [
             {"id": "cb2-wwd", "type": "cta_banner", "data": {"background_image": "/wwd-cta-bg.jpg", "heading_primary": "Tell us your idea & we are here to make it come true!", "heading_secondary": "Bringing a higher future to the present", "description": "Let\u2019s get together and build new opportunities.", "buttons": [{"label": "SIGN-UP", "link": "/register", "style": "solid"}]}},
         ],
     },
+    {
+        "slug": "resonance",
+        "title": "The Resonance Gateway",
+        "status": "published",
+        "sections": [
+            {"id": "rg-hero", "type": "hero", "data": {"eyebrow": "The Resonance Gateway", "heading": "The Resonance Gateway", "subtext": "The living point of entry into Spaces of Learning. A space of reflection where, beyond titles, resumes, and ambition, what is already true about you can become visible."}},
+            {"id": "rg-steward", "type": "steward_intro", "data": {"name": "Whitney", "title": "SOL's Resonance Steward", "statement": "I serve as the first living gateway into Spaces of Learning. I hold a space of reflection where what is already true can become visible \u2014 allowing authentic alignment to follow naturally. From that clarity, each person's unique contribution, relationships, and next steps within SOL come into focus.", "principle": "I'm not deciding whether you belong. I'm not assigning you a role. I'm holding a space of reflection in which you become more visible to yourself \u2014 and to SOL. The mirror has no identity; that's why it's so clear."}},
+            {"id": "rg-principles", "type": "principle_cards", "data": {"heading": "What the Gateway Is", "subtext": "Three principles guide how we meet every new member.", "cards": [{"icon": "sparkles", "title": "Resonance, not alignment", "description": "Alignment is the result. Resonance is the mechanism. We meet you; we do not align you. Resonance reveals, and alignment naturally follows."}, {"icon": "compass", "title": "Reveal, don't recognize", "description": "We create the conditions in which what is already true can become visible. Not giving. Not teaching. Not convincing. Revealing."}, {"icon": "heart_handshake", "title": "Contribution, not role", "description": "Your contribution comes into focus. A role can change; contribution is deeper. From it, roles, collaborations, and opportunities emerge."}]}},
+            {"id": "rg-mirror", "type": "centered_statement", "data": {"heading": "The Mirror Has No Identity", "body": "This is more than a quote. It is the design principle that explains why the Gateway works. The mirror does not decide who you are. It has no identity of its own \u2014 and that is exactly why it can reflect you so clearly. You are not evaluated here. You are met."}},
+            {"id": "rg-cta", "type": "cta_banner", "data": {"background_image": "/community-bg.jpg", "heading_primary": "Ready to Be Met?", "heading_secondary": "Enter the Gateway", "description": "Before anything is asked of you \u2014 before any role is named \u2014 you are invited to be met.", "buttons": [{"label": "Enter the Gateway", "link": "/register", "style": "solid"}]}},
+        ],
+    },
 ]
 
 

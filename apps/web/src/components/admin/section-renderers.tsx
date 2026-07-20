@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass } from "lucide-react";
+import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass, Sparkles, HeartHandshake } from "lucide-react";
 
 interface Section {
   id: string;
@@ -1015,6 +1015,95 @@ function ColumnsBlock({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+// ── Steward Intro (Whitney — Resonance Steward) ──
+function StewardIntroBlock({ data }: { data: Record<string, unknown> }) {
+  const name = (data.name as string) || "Whitney";
+  const title = (data.title as string) || "SOL's Resonance Steward";
+  const statement = data.statement as string;
+  const principle = data.principle as string;
+
+  return (
+    <section className="py-16">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[0_24px_0_24px] border border-primary/15 bg-sage-light/30 p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-widest text-primary">
+                {name} — {title}
+              </p>
+              {statement && <p className="mt-3 text-muted-foreground leading-relaxed">{statement}</p>}
+              {principle && (
+                <p className="mt-4 border-l-2 border-primary/30 pl-4 text-sm italic text-muted-foreground">
+                  {principle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Principle Cards (icon + title + description trio) ──
+const PRINCIPLE_ICON_MAP: Record<string, ReactNode> = {
+  sparkles: <Sparkles className="mb-4 h-10 w-10 text-primary" />,
+  compass: <Compass className="mb-4 h-10 w-10 text-primary" />,
+  heart_handshake: <HeartHandshake className="mb-4 h-10 w-10 text-primary" />,
+};
+
+function PrincipleCardsBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const subtext = data.subtext as string;
+  const cards = data.cards as Array<{ icon: string; title: string; description: string }> | undefined;
+
+  return (
+    <section className="bg-sage-light/30 py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {(heading || subtext) && (
+          <div className="text-center">
+            {heading && <h2 className="text-4xl font-bold font-heading">{heading}</h2>}
+            {subtext && <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{subtext}</p>}
+          </div>
+        )}
+        <div className="mt-16 grid gap-8 md:grid-cols-3">
+          {(cards || []).map((card, i) => (
+            <div key={i} className="rounded-[0_20px_0_20px] bg-white p-8 shadow-sm">
+              {PRINCIPLE_ICON_MAP[card.icon] || <Sparkles className="mb-4 h-10 w-10 text-primary" />}
+              <h3 className="text-xl font-bold font-heading">{card.title}</h3>
+              <p className="mt-3 text-muted-foreground">{card.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Centered Statement (icon + heading + body, e.g. "The Mirror Has No Identity") ──
+function CenteredStatementBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const body = data.body as string;
+  const accent = data.accent as boolean | undefined;
+
+  return (
+    <section className={accent ? "bg-sage-light/30 py-20" : "py-20"}>
+      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <div className="flex justify-center mb-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="h-7 w-7 text-primary" />
+          </div>
+        </div>
+        {heading && <h2 className="text-3xl font-bold font-heading">{heading}</h2>}
+        {body && <p className="mt-6 text-lg text-muted-foreground leading-relaxed">{body}</p>}
+      </div>
+    </section>
+  );
+}
+
 const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => ReactNode> = {
   hero: HeroBlock,
   hero_slideshow: HeroSlideshowBlock,
@@ -1039,6 +1128,9 @@ const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => Re
   stats: StatsBlock,
   gallery: GalleryBlock,
   columns: ColumnsBlock,
+  steward_intro: StewardIntroBlock,
+  principle_cards: PrincipleCardsBlock,
+  centered_statement: CenteredStatementBlock,
 };
 
 export function DynamicPage({ sections }: { sections: Section[] }) {
