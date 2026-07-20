@@ -74,7 +74,7 @@ function RegisterForm() {
     e.preventDefault();
     setError("");
 
-    if (!form.fullName || !form.email || !form.password || !form.role) {
+    if (!form.fullName || !form.email || !form.password) {
       setError("Please fill in all fields");
       return;
     }
@@ -98,7 +98,7 @@ function RegisterForm() {
         email: form.email,
         password: form.password,
         fullName: form.fullName,
-        role: form.role as UserRole,
+        role: (form.role || "participant") as UserRole,
         membershipAgreed: form.membershipAgreed,
         emailAlerts: form.emailAlerts,
       });
@@ -234,21 +234,28 @@ function RegisterForm() {
               </button>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">I am a...</label>
+              <label className="text-sm font-medium">
+                How do you feel called to contribute?{" "}
+                <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
               <Select
                 value={form.role}
                 onValueChange={(v) => update("role", v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
+                  <SelectValue placeholder="Select a role, or arrive as a Participant" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="innovator">Innovator</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
                   <SelectItem value="investor">Investor</SelectItem>
-                  <SelectItem value="participant">Participant</SelectItem>
+                  <SelectItem value="participant">Participant — not sure yet, let me be met first</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Nothing is decided here. Your contribution comes into focus through reflection, not a
+                checkbox — you can change this anytime.
+              </p>
             </div>
             <div className="rounded-[0_10px_0_10px] border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
               <strong className="text-primary">SPACES OF LEARNING</strong> is a Private Membership
