@@ -21,6 +21,7 @@ from src.routers.activity import router as activity_router
 from src.routers.pillars import router as pillars_router
 from src.routers.admin_pages import router as admin_pages_router
 from src.routers.admin_media import router as admin_media_router
+from src.routers.admin_match import router as admin_match_router
 from src.routers.pages import router as pages_router
 from src.routers.contact import router as contact_router
 from src.routers.affiliate import router as affiliate_router
@@ -50,6 +51,7 @@ CORE_ROUTERS: list[FeatureRouter] = [
     ("core", pillars_router),
     ("core", admin_pages_router),
     ("core", admin_media_router),
+    ("core", admin_match_router),
     ("core", pages_router),
     ("core", contact_router),
     ("core", affiliate_router),

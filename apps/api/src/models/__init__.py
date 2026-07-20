@@ -32,6 +32,7 @@ from src.models.donation import Donation
 from src.models.pillar_submission import PillarSubmission
 from src.models.page import Page, PageRevision, Media
 from src.models.affiliate import AffiliateCode, AffiliateClick, AffiliateConversion
+from src.models.match_settings import MatchSettings
 
 __all__ = [
     "User",
@@ -77,4 +78,5 @@ __all__ = [
     "AffiliateCode",
     "AffiliateClick",
     "AffiliateConversion",
+    "MatchSettings",
 ]

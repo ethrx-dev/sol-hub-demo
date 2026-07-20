@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from src.deps import DbSession, CurrentUser
 from src.models.match import Match, MatchStatus
+from src.models.match_settings import MatchSettings
 from src.models.project import Project
 from src.models.user import User
 from src.schemas.match import MatchCreateRequest, MatchUpdateRequest, MatchResponse
@@ -156,14 +157,14 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
         matched_user = await db.get(User, investor_id)
 
     # High-quality match alert: compute a quick compatibility score for mentor
-    # matches and notify Whitney when it crosses the threshold.
-    QUALITY_THRESHOLD = 70
+    # matches and notify Whitney when it crosses the (admin-configurable) threshold.
+    settings = await load_match_settings(db)
     if mentor_id and matched_user:
-        score = _quick_match_score(project, matched_user, innovator)
+        score = _quick_match_score(project, matched_user, innovator, settings)
         mentor_type = None
         if matched_user.role_specific_data:
             mentor_type = matched_user.role_specific_data.get("mentor_type")
-        if score >= QUALITY_THRESHOLD:
+        if score >= settings.quality_threshold:
             await notify_whitney_quality_match(
                 db=db,
                 project_title=project.title,
@@ -291,30 +292,32 @@ async def get_match_suggestions(
         preferred_mentor_type = innovator.role_specific_data.get("mentor_type")
     innovator_guided_answers = innovator.onboarding_responses if innovator else {}
 
+    settings = await load_match_settings(db)
+
     scored = []
     for u in users:
         score = 0
         user_sectors = {s.lower() for s in (u.sectors_of_interest or [])}
         common_sectors = project_sectors & user_sectors
-        score += len(common_sectors) * 25
+        score += len(common_sectors) * settings.sector_weight
 
         user_skills = {s.lower() for s in (u.skills or [])}
         if project.sub_sector and project.sub_sector.lower() in user_skills:
-            score += 20
+            score += settings.skill_weight
 
         # Mentor-type compatibility scoring (only for mentor role)
         mentor_type = None
         if role == "mentor" and u.role_specific_data:
             mentor_type = u.role_specific_data.get("mentor_type")
             if mentor_type and preferred_mentor_type and mentor_type == preferred_mentor_type:
-                score += 30  # Strong bonus for exact mentor type match
+                score += settings.mentor_exact_weight  # Strong bonus for exact mentor type match
             elif mentor_type and preferred_mentor_type:
-                score += 10  # Partial bonus for any mentor type when innovator has preference
+                score += settings.mentor_partial_weight  # Partial bonus for any mentor type when innovator has preference
 
         # Guided answer similarity scoring (if both have onboarding responses)
         if u.onboarding_responses and innovator_guided_answers:
             guided_score = calculate_guided_similarity(u.onboarding_responses, innovator_guided_answers)
-            score += guided_score
+            score += min(guided_score, settings.guided_weight)
 
         scored.append((u, min(score, 100), mentor_type))
 
@@ -356,12 +359,13 @@ def calculate_guided_similarity(user_responses: dict, innovator_responses: dict)
     return min(int((matches / len(common_keys)) * 25), 25)
 
 
-def _quick_match_score(project, mentor: User, innovator: User | None) -> int:
+def _quick_match_score(project, mentor: User, innovator: User | None, settings: MatchSettings) -> int:
     """Compute a mentor↔project compatibility score (0-100) for Whitney alerts.
 
-    Mirrors the factor weighting used in get_match_suggestions:
-    sector overlap (25 each), skill match (20), mentor-type compatibility
-    (+30 exact / +10 partial), guided-answer similarity (up to 25).
+    Uses the admin-configurable weighting from MatchSettings:
+    sector overlap (sector_weight each), skill match (skill_weight),
+    mentor-type compatibility (+mentor_exact_weight exact / +mentor_partial_weight
+    partial), guided-answer similarity (up to guided_weight).
     """
     score = 0
 
@@ -373,11 +377,11 @@ def _quick_match_score(project, mentor: User, innovator: User | None) -> int:
 
     user_sectors = {s.lower() for s in (mentor.sectors_of_interest or [])}
     common_sectors = project_sectors & user_sectors
-    score += len(common_sectors) * 25
+    score += len(common_sectors) * settings.sector_weight
 
     user_skills = {s.lower() for s in (mentor.skills or [])}
     if project.sub_sector and project.sub_sector.lower() in user_skills:
-        score += 20
+        score += settings.skill_weight
 
     mentor_type = mentor.role_specific_data.get("mentor_type") if mentor.role_specific_data else None
     preferred_type = (
@@ -387,14 +391,28 @@ def _quick_match_score(project, mentor: User, innovator: User | None) -> int:
     )
     if mentor_type and preferred_type:
         if mentor_type == preferred_type:
-            score += 30
+            score += settings.mentor_exact_weight
         else:
-            score += 10
+            score += settings.mentor_partial_weight
 
     if mentor.onboarding_responses and innovator and innovator.onboarding_responses:
-        score += calculate_guided_similarity(mentor.onboarding_responses, innovator.onboarding_responses)
+        score += min(
+            calculate_guided_similarity(mentor.onboarding_responses, innovator.onboarding_responses),
+            settings.guided_weight,
+        )
 
     return min(score, 100)
+
+
+async def load_match_settings(db) -> MatchSettings:
+    """Load the singleton MatchSettings row (id=1), creating defaults if absent."""
+    result = await db.execute(select(MatchSettings).where(MatchSettings.id == 1))
+    row = result.scalar_one_or_none()
+    if row is None:
+        row = MatchSettings(id=1)
+        db.add(row)
+        await db.flush()
+    return row
 
 
 @router.get("/{match_id}", response_model=MatchResponse)

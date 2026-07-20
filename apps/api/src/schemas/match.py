@@ -41,3 +41,25 @@ class MatchResponse(BaseResponseWithUUID):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class MatchSettingsResponse(BaseModel):
+    id: int = 1
+    sector_weight: int
+    skill_weight: int
+    mentor_exact_weight: int
+    mentor_partial_weight: int
+    guided_weight: int
+    quality_threshold: int
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class MatchSettingsUpdate(BaseModel):
+    sector_weight: int
+    skill_weight: int
+    mentor_exact_weight: int
+    mentor_partial_weight: int
+    guided_weight: int
+    quality_threshold: int
