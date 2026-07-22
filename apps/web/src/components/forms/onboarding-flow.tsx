@@ -266,7 +266,7 @@ export function OnboardingFlow() {
           )}
 
           {/* Step 3/4: Record Video */}
-          {(step === 3 && role !== "mentor") || (step === 4 && role === "mentor") && (
+          {((step === 3 && role !== "mentor") || (step === 4 && role === "mentor")) && (
             <div className="space-y-4">
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">Introduce Yourself</h2>
@@ -278,6 +278,11 @@ export function OnboardingFlow() {
                 pillar={PILLAR_MAP[role] || "innovators"}
                 mentorType={role === "mentor" ? (data.mentorType as MentorType) : undefined}
               />
+              {(role === "investor" || role === "participant") && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Optional — you can record a video introduction now, or skip and do it later from your profile.
+                </p>
+              )}
             </div>
           )}
 
@@ -491,15 +496,27 @@ export function OnboardingFlow() {
             >
               Back
             </Button>
-            {step < totalSteps ? (
-              <Button onClick={() => setStep((s) => s + 1)}>
-                Continue
-              </Button>
-            ) : (
-              <Button onClick={handleComplete} loading={submitting}>
-                Go to Dashboard
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {((step === 3 && role !== "mentor") || (step === 4 && role === "mentor")) && role !== "innovator" && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s + 1)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Skip
+                </button>
+              )}
+              {step < totalSteps ? (
+                <Button onClick={() => setStep((s) => s + 1)}>
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleComplete} loading={submitting}>
+                  Go to Dashboard
+                </Button>
+              )}
+            </div>
+          </div>
           </div>
         </CardContent>
       </Card>

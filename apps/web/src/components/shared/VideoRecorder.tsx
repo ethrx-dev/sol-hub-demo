@@ -172,29 +172,32 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
 
   const startCountdown = useCallback(() => {
     setError(null);
-    setCountdown(3);
+    setCountdown(-1);
     setState("countdown");
     cameraReadyRef.current = false;
+    recordingStartedRef.current = false;
     startCamera().then((stream) => {
       cameraReadyRef.current = true;
-      if (stream) streamRef.current = stream;
+      if (stream) {
+        streamRef.current = stream;
+        setCountdown(3);
+      } else {
+        setError("Camera access is required. Please allow camera and microphone permissions.");
+        setState("idle");
+      }
     });
   }, [startCamera]);
 
   useEffect(() => {
     if (state !== "countdown") return;
+    if (countdown < 0) return;
     if (countdown > 0) {
       const id = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
       return () => clearTimeout(id);
     }
     if (recordingStartedRef.current) return;
     recordingStartedRef.current = true;
-    if (cameraReadyRef.current && streamRef.current) {
-      startRecording(streamRef.current);
-    } else {
-      setError("Camera access is required. Please allow camera and microphone permissions.");
-      setState("idle");
-    }
+    startRecording(streamRef.current!);
   }, [state, countdown, startRecording]);
 
   const stopRecording = useCallback(() => {
@@ -301,7 +304,14 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="text-8xl font-bold font-heading">{countdown}</span>
+            {countdown > 0 ? (
+              <span className="text-8xl font-bold font-heading">{countdown}</span>
+            ) : (
+              <div className="text-center">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                <p className="mt-4 text-sm text-white/70">Preparing camera...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

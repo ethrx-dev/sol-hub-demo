@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FolderKanban, Video, Users, Play, ChevronDown, ChevronUp } from "lucide-react";
+import { FolderKanban, Video, Users, Play, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Badge } from "@/src/components/ui/badge";
 import { api } from "@/src/lib/api-client";
@@ -26,6 +26,7 @@ export default function AdminPillarSubmissionsPage() {
   const [filter, setFilter] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetch = async (pillar?: string) => {
     setLoading(true);
@@ -45,6 +46,18 @@ export default function AdminPillarSubmissionsPage() {
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => (prev === id ? null : id));
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this submission? This cannot be undone.")) return;
+    setDeleting(id);
+    try {
+      await api.del(`/pillars/submissions/${id}`);
+      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      alert("Failed to delete submission.");
+    }
+    setDeleting(null);
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -145,14 +158,26 @@ export default function AdminPillarSubmissionsPage() {
                       <span className="text-sm font-medium">{s.userName}</span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {s.createdAt ? new Date(s.createdAt).toLocaleString() : "N/A"}
-                    {" · "}
-                    {(s.videoSize / 1024 / 1024).toFixed(1)} MB
-                  </p>
-                  {s.userEmail && (
-                    <p className="text-xs text-muted-foreground truncate">{s.userEmail}</p>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {s.createdAt ? new Date(s.createdAt).toLocaleString() : "N/A"}
+                        {" · "}
+                        {(s.videoSize / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                      {s.userEmail && (
+                        <p className="text-xs text-muted-foreground truncate">{s.userEmail}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(s.id)}
+                      disabled={deleting === s.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      title="Delete submission"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
 
                   {mentorLabel && guidedAnswers && Object.keys(guidedAnswers).length > 0 && (
                     <div className="mt-3">

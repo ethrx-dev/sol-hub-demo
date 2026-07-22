@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass } from "lucide-react";
+import { Rocket, Handshake, GraduationCap, Check, Heart, FileText, Users, Pen, ArrowRight, Compass, Sparkles, HeartHandshake, Globe, Shield } from "lucide-react";
 
 interface Section {
   id: string;
@@ -28,6 +28,7 @@ function HeroSlideshowBlock({ data }: { data: Record<string, unknown> }) {
   const headingPrimary = data.heading_primary as string;
   const headingSecondary = data.heading_secondary as string;
   const description = data.description as string;
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
   const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
@@ -82,6 +83,41 @@ function HeroSlideshowBlock({ data }: { data: Record<string, unknown> }) {
               <p className="mt-6 text-lg sm:text-[1.4rem] text-white max-w-3xl mx-auto font-sans">
                 {description}
               </p>
+            )}
+            {buttons && buttons.length > 0 && (
+              <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
+                {buttons.map((btn, i) =>
+                  btn.style === "outline" ? (
+                    <Link
+                      key={i}
+                      href={btn.link}
+                      className="btn-sol uppercase text-sm"
+                      style={{
+                        background: "transparent",
+                        border: "2px solid #EFC89A",
+                        color: "#fff",
+                        padding: "18px 40px",
+                        borderRadius: "0 30px 0 30px",
+                      }}
+                    >
+                      {btn.label}
+                    </Link>
+                  ) : (
+                    <Link
+                      key={i}
+                      href={btn.link}
+                      className="btn-sol uppercase text-sm text-white"
+                      style={{
+                        background: "#729D64",
+                        borderRadius: "0 30px 0 30px",
+                        padding: "20px 40px",
+                      }}
+                    >
+                      {btn.label}
+                    </Link>
+                  )
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -166,7 +202,8 @@ function PillarCardsBlock({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-function ParticipantCardBlock(_props: { data: Record<string, unknown> }) {
+function ParticipantCardBlock({ data }: { data: Record<string, unknown> }) {
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
   return (
     <section className="py-10">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -206,17 +243,36 @@ function ParticipantCardBlock(_props: { data: Record<string, unknown> }) {
               <span className="w-1 h-1 rounded-full bg-accent" />
               <span>Find your people</span>
             </div>
-            <Link
-              href="/register?role=participant"
-              className="inline-flex items-center gap-2 mt-6 text-sm font-bold uppercase tracking-wider"
-              style={{
-                color: "#729D64",
-                borderBottom: "2px solid #729D64",
-                paddingBottom: "4px",
-              }}
-            >
-              I&apos;m Interested — Join as a Participant <ArrowRight className="h-4 w-4" />
-            </Link>
+            {buttons && buttons.length > 0 ? (
+              <div className="mt-6 flex items-center gap-4 flex-wrap justify-center">
+                {buttons.map((btn, i) => (
+                  <Link
+                    key={i}
+                    href={btn.link}
+                    className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider"
+                    style={{
+                      color: "#729D64",
+                      borderBottom: "2px solid #729D64",
+                      paddingBottom: "4px",
+                    }}
+                  >
+                    {btn.label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <Link
+                href="/register?role=participant"
+                className="inline-flex items-center gap-2 mt-6 text-sm font-bold uppercase tracking-wider"
+                style={{
+                  color: "#729D64",
+                  borderBottom: "2px solid #729D64",
+                  paddingBottom: "4px",
+                }}
+              >
+                I&apos;m Interested — Join as a Participant <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -491,6 +547,8 @@ const FEATURE_ICON_MAP: Record<string, ReactNode> = {
   users: <Users className="h-[41px] w-[41px]" />,
   dollar: <Handshake className="h-[41px] w-[41px]" />,
   shield: <Rocket className="h-[41px] w-[41px]" />,
+  graduation_cap: <GraduationCap className="h-[41px] w-[41px]" />,
+  globe: <Globe className="h-[41px] w-[41px]" />,
 };
 
 function FeatureCardsBlock({ data }: { data: Record<string, unknown> }) {
@@ -1015,6 +1073,241 @@ function ColumnsBlock({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+// ── Steward Intro (Whitney — Resonance Steward) ──
+function StewardIntroBlock({ data }: { data: Record<string, unknown> }) {
+  const name = (data.name as string) || "Whitney";
+  const title = (data.title as string) || "SOL's Resonance Steward";
+  const statement = data.statement as string;
+  const principle = data.principle as string;
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
+
+  return (
+    <section className="py-16">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[0_24px_0_24px] border border-primary/15 bg-sage-light/30 p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-widest text-primary">
+                {name} — {title}
+              </p>
+              {statement && <p className="mt-3 text-muted-foreground leading-relaxed">{statement}</p>}
+              {principle && (
+                <p className="mt-4 border-l-2 border-primary/30 pl-4 text-sm italic text-muted-foreground">
+                  {principle}
+                </p>
+              )}
+            </div>
+          </div>
+          {buttons && buttons.length > 0 && (
+            <div className="mt-6 flex items-center gap-4 flex-wrap">
+              {buttons.map((btn, i) =>
+                btn.style === "outline" ? (
+                  <Link
+                    key={i}
+                    href={btn.link}
+                    className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white"
+                  >
+                    {btn.label}
+                  </Link>
+                ) : (
+                  <Link key={i} href={btn.link} className="btn-sol btn-sol-primary uppercase text-sm">
+                    {btn.label}
+                  </Link>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Principle Cards (icon + title + description trio) ──
+const PRINCIPLE_ICON_MAP: Record<string, ReactNode> = {
+  sparkles: <Sparkles className="mb-4 h-10 w-10 text-primary" />,
+  compass: <Compass className="mb-4 h-10 w-10 text-primary" />,
+  heart_handshake: <HeartHandshake className="mb-4 h-10 w-10 text-primary" />,
+};
+
+function PrincipleCardsBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const subtext = data.subtext as string;
+  const cards = data.cards as Array<{ icon: string; title: string; description: string }> | undefined;
+
+  return (
+    <section className="bg-sage-light/30 py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {(heading || subtext) && (
+          <div className="text-center">
+            {heading && <h2 className="text-4xl font-bold font-heading">{heading}</h2>}
+            {subtext && <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{subtext}</p>}
+          </div>
+        )}
+        <div className="mt-16 grid gap-8 md:grid-cols-3">
+          {(cards || []).map((card, i) => (
+            <div key={i} className="rounded-[0_20px_0_20px] bg-white p-8 shadow-sm">
+              {PRINCIPLE_ICON_MAP[card.icon] || <Sparkles className="mb-4 h-10 w-10 text-primary" />}
+              <h3 className="text-xl font-bold font-heading">{card.title}</h3>
+              <p className="mt-3 text-muted-foreground">{card.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Centered Statement (icon + heading + body, e.g. "The Mirror Has No Identity") ──
+function CenteredStatementBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const body = data.body as string;
+  const accent = data.accent as boolean | undefined;
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
+
+  return (
+    <section className={accent ? "bg-sage-light/30 py-20" : "py-20"}>
+      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <div className="flex justify-center mb-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="h-7 w-7 text-primary" />
+          </div>
+        </div>
+        {heading && <h2 className="text-3xl font-bold font-heading">{heading}</h2>}
+        {body && <p className="mt-6 text-lg text-muted-foreground leading-relaxed">{body}</p>}
+        {buttons && buttons.length > 0 && (
+          <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
+            {buttons.map((btn, i) =>
+              btn.style === "outline" ? (
+                <Link
+                  key={i}
+                  href={btn.link}
+                  className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white"
+                >
+                  {btn.label}
+                </Link>
+              ) : (
+                <Link key={i} href={btn.link} className="btn-sol btn-sol-primary uppercase text-sm">
+                  {btn.label}
+                </Link>
+              )
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Hero with dual CTAs (e.g. become-a-member entry) ──
+function HeroActionsBlock({ data }: { data: Record<string, unknown> }) {
+  const eyebrow = data.eyebrow as string;
+  const heading = data.heading as string;
+  const highlight = data.highlight as string;
+  const subtext = data.subtext as string;
+  const icon = data.icon as string;
+  const buttons = data.buttons as Array<{ label: string; link: string; style: string }> | undefined;
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-sage-light/40 via-background to-sage-light/20 py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+        {icon && (
+          <div className="flex justify-center mb-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={icon} alt="" className="h-16 w-16" />
+          </div>
+        )}
+        <div className="mx-auto max-w-3xl text-center">
+          {eyebrow && (
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">
+              {heading} {highlight && <span className="text-primary">{highlight}</span>}
+            </h1>
+          )}
+          {!eyebrow && heading && (
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-[4.5rem] leading-[1.1] font-heading">
+              {heading} {highlight && <span className="text-primary">{highlight}</span>}
+            </h1>
+          )}
+          {subtext && <p className="mt-6 text-lg text-muted-foreground">{subtext}</p>}
+          {buttons && buttons.length > 0 && (
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              {buttons.map((btn, i) =>
+                btn.style === "outline" ? (
+                  <Link
+                    key={i}
+                    href={btn.link}
+                    className="btn-sol uppercase text-sm bg-white text-primary hover:bg-primary hover:text-white"
+                  >
+                    {btn.label}
+                  </Link>
+                ) : (
+                  <Link key={i} href={btn.link} className="btn-sol btn-sol-primary uppercase text-sm">
+                    {btn.label}
+                  </Link>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Notice Banner (e.g. PMA notice) ──
+function NoticeBannerBlock({ data }: { data: Record<string, unknown> }) {
+  const text = data.text as string;
+  const linkText = data.link_text as string;
+  const linkUrl = data.link_url as string;
+
+  return (
+    <section className="bg-primary/5 py-8 border-y border-primary/10">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+        <p className="text-sm font-medium text-muted-foreground">
+          {text}
+          {linkText && linkUrl && (
+            <>
+              {" "}
+              <Link href={linkUrl} className="text-primary underline">
+                {linkText}
+              </Link>
+            </>
+          )}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ── FAQ List ──
+function FaqListBlock({ data }: { data: Record<string, unknown> }) {
+  const heading = data.heading as string;
+  const faqs = data.faqs as Array<{ q: string; a: string }> | undefined;
+
+  return (
+    <section className="bg-sage-light/30 py-20">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        {heading && (
+          <div className="text-center">
+            <h2 className="text-4xl font-bold font-heading">{heading}</h2>
+          </div>
+        )}
+        <div className="mt-12 space-y-6">
+          {(faqs || []).map((faq, i) => (
+            <div key={i} className="rounded-[0_10px_0_10px] bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-bold font-heading">{faq.q}</h3>
+              <p className="mt-2 text-muted-foreground">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => ReactNode> = {
   hero: HeroBlock,
   hero_slideshow: HeroSlideshowBlock,
@@ -1039,6 +1332,12 @@ const RENDERERS: Record<string, (props: { data: Record<string, unknown> }) => Re
   stats: StatsBlock,
   gallery: GalleryBlock,
   columns: ColumnsBlock,
+  steward_intro: StewardIntroBlock,
+  principle_cards: PrincipleCardsBlock,
+  centered_statement: CenteredStatementBlock,
+  hero_actions: HeroActionsBlock,
+  notice_banner: NoticeBannerBlock,
+  faq_list: FaqListBlock,
 };
 
 export function DynamicPage({ sections }: { sections: Section[] }) {

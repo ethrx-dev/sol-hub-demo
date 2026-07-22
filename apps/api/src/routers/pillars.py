@@ -219,3 +219,22 @@ async def pillar_stats(db: DbSession = None):
         "mentors": stats.get("mentors", 0),
         "investors": stats.get("investors", 0),
     }
+
+
+@router.delete("/submissions/{submission_id}")
+async def delete_submission(
+    submission_id: str,
+    db: DbSession = None,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    result = await db.execute(select(PillarSubmission).where(PillarSubmission.id == submission_id))
+    submission = result.scalar_one_or_none()
+    if not submission:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+
+    await db.delete(submission)
+    await db.commit()
+    return {"status": "deleted"}
