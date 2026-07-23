@@ -40,7 +40,7 @@ export default function InnovatorStoryPage() {
     }
     setSubmitting(true);
     try {
-      const data = await api.post("/blog/stories", { content: content.trim() });
+      const data = await api.post<{ id: string; content: string; review_status: string; review_notes: string | null }>("/blog/stories", { content: content.trim() });
       setStory(data);
       toast.success("Story submitted for review!");
     } catch (e: any) {

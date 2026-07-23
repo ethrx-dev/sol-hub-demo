@@ -51,7 +51,7 @@ export default function AdminPillarSubmissionsPage() {
     if (!confirm("Delete this submission? This cannot be undone.")) return;
     setDeleting(id);
     try {
-      await api.del(`/pillars/submissions/${id}`);
+      await api.delete(`/pillars/submissions/${id}`);
       setSubmissions((prev) => prev.filter((s) => s.id !== id));
     } catch {
       alert("Failed to delete submission.");

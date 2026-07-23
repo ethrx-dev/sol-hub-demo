@@ -1,92 +1,68 @@
-// Stable internal keys — these NEVER change once data is stored.
-// The human-facing label/description can be renamed freely without
-// breaking stored data, validation, or matching logic.
 export type MentorType = "psych" | "prof" | "coach";
 
 export const MENTOR_TYPES: { value: MentorType; label: string; description: string }[] = [
   {
     value: "psych",
-    label: "Psychologist", // display only — rename freely
-    description: "Help innovators navigate mindset, purpose, and emotional resilience",
+    label: "Psychological Mentor",
+    description:
+      "You guide others through inner transformation, helping them navigate mindset shifts, emotional resilience, and personal growth.",
   },
   {
     value: "prof",
-    label: "Professor", // display only — rename freely
-    description: "Provide structured frameworks, research-backed guidance, and academic rigor",
+    label: "Professional Mentor",
+    description:
+      "You support career and professional development, sharing expertise in strategy, execution, and industry knowledge.",
   },
   {
     value: "coach",
-    label: "Coach", // display only — rename freely
-    description: "Drive accountability, execution, and practical skill-building",
+    label: "Coach",
+    description:
+      "You focus on skill-building and actionable growth, helping others develop capabilities through structured guidance.",
   },
 ];
 
-// Single source of truth for the 9 guided Q&A questions per mentor type.
 export const MENTOR_GUIDED_QUESTIONS: Record<MentorType, string[]> = {
   psych: [
-    "What emotional patterns do you notice holding innovators back?",
-    "How do you help someone reconnect with their core purpose?",
-    "What practices do you use to build psychological safety in relationships?",
-    "How do you work with fear of failure or imposter syndrome?",
-    "Describe a time you helped someone through a major identity shift",
-    "What boundaries do you maintain in deep mentoring relationships?",
-    "How do you measure progress in inner work?",
-    "What's your approach when an innovator's values conflict with their strategy?",
-    "How do you sustain your own wellbeing while holding space for others?",
+    "What draws you to supporting others in their inner transformation?",
+    "How do you help someone navigate uncertainty or resistance?",
+    "What practices or frameworks do you use to foster emotional resilience?",
   ],
   prof: [
-    "What frameworks or models do you rely on most for early-stage ventures?",
-    "How do you structure a research-backed validation process?",
-    "What academic principles translate best to real-world innovation?",
-    "Describe how you teach systems thinking to first-time founders",
-    "What metrics do you track to assess venture viability?",
-    "How do you balance theoretical rigor with startup speed?",
-    "What's your approach to curriculum design for mentor-led learning?",
-    "How do you evaluate whether a problem is worth solving?",
-    "What literatures or disciplines most inform your mentoring?",
+    "What is your core philosophy when mentoring someone professionally?",
+    "How do you approach helping someone identify their career path?",
+    "What is one key lesson you share with every mentee?",
   ],
   coach: [
-    "What accountability structures work best for your clients?",
-    "How do you break down a 90-day plan into weekly actions?",
-    "Describe your approach when someone consistently misses commitments",
-    "What tools or templates do you provide for execution tracking?",
-    "How do you handle scope creep or shiny object syndrome?",
-    "What's your process for skill-gap identification and closure?",
-    "How do you measure and celebrate incremental wins?",
-    "Describe a coaching engagement that transformed someone's trajectory",
-    "How do you maintain momentum through the messy middle?",
+    "How do you structure your coaching sessions?",
+    "What methods do you use to track a mentee's progress?",
+    "How do you adapt your coaching style to different learning needs?",
   ],
 };
 
-// 3 on-screen questions shown during the 90-second video recording.
 export const MENTOR_VIDEO_QUESTIONS: Record<MentorType, string[]> = {
   psych: [
-    "What emotional patterns do you see holding innovators back?",
-    "How do you create psychological safety in mentoring relationships?",
-    "What's your approach when someone's values conflict with their strategy?",
+    "What does psychological mentorship mean to you?",
+    "Share a story of guiding someone through a breakthrough.",
+    "What inner quality do you most help others cultivate?",
   ],
   prof: [
-    "What frameworks do you use to validate early-stage ventures?",
-    "How do you teach systems thinking to first-time innovators?",
-    "What metrics matter most for assessing venture viability?",
+    "What professional achievement are you most proud of guiding?",
+    "How do you approach mentoring someone at a crossroads?",
+    "What is the most important professional lesson you share?",
   ],
   coach: [
-    "What accountability structures drive consistent execution?",
-    "How do you handle scope creep and maintain focus?",
-    "What's your process for identifying and closing skill gaps?",
+    "What coaching philosophy guides your practice?",
+    "Describe a time your coaching made a lasting impact.",
+    "What skill do you most enjoy helping others build?",
   ],
 };
 
-export function getMentorTypeLabel(type: MentorType | string | null | undefined): string {
-  if (!type) return "";
-  return MENTOR_TYPES.find((t) => t.value === type)?.label ?? String(type);
-}
+const MENTOR_TYPE_LABELS: Record<MentorType, string> = {
+  psych: "Psychological Mentor",
+  prof: "Professional Mentor",
+  coach: "Coach",
+};
 
-export function getMentorTypeDescription(type: MentorType | string | null | undefined): string {
-  if (!type) return "";
-  return MENTOR_TYPES.find((t) => t.value === type)?.description ?? "";
-}
-
-export function isValidMentorType(type: string | null | undefined): type is MentorType {
-  return !!type && MENTOR_TYPES.some((t) => t.value === type);
+export function getMentorTypeLabel(type: MentorType): string {
+  return MENTOR_TYPE_LABELS[type] || type;
 }

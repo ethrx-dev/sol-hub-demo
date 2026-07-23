@@ -6,7 +6,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { Info, ChevronDown, ChevronUp } from "lucide-react";
-import { getMentorTypeLabel } from "@/src/lib/mentor/types";
+import { getMentorTypeLabel, MentorType } from "@/src/lib/mentor/types";
 
 interface MentorSuggestionCardProps {
   user: {
@@ -36,7 +36,7 @@ export function MentorSuggestionCard({
   requesting,
 }: MentorSuggestionCardProps) {
   const [showWhy, setShowWhy] = useState(false);
-  const mentorLabel = user.mentor_type ? getMentorTypeLabel(user.mentor_type) : null;
+  const mentorLabel = user.mentor_type ? getMentorTypeLabel(user.mentor_type as MentorType) : null;
 
   // Build a human-readable "why" breakdown from available signals.
   const whyReasons: string[] = [];

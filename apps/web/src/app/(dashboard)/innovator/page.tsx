@@ -49,7 +49,7 @@ export default function InnovatorDashboard() {
 
       {/* Story prompt card */}
       {!loading && (
-        <Card className={`border-l-4 ${!story ? "border-l-accent" : story.review_status === "approved" ? "border-l-green-500" : story.review_status === "rejected" ? "border-l-red-500" : "border-l-yellow-500"}`}>
+        <Card className={`border-l-4 ${!story ? "border-l-accent" : story !== "loading" && story.review_status === "approved" ? "border-l-green-500" : story !== "loading" && story.review_status === "rejected" ? "border-l-red-500" : "border-l-yellow-500"}`}>
           <CardContent className="p-6 flex items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className={`p-2 rounded-full ${!story ? "bg-accent/10" : "bg-muted"}`}>
@@ -57,16 +57,16 @@ export default function InnovatorDashboard() {
               </div>
               <div>
                 <h3 className="font-bold font-heading">
-                  {!story ? "Share Your Story" : STATUS_MAP[story.review_status]?.label || "Story"}
+                  {!story ? "Share Your Story" : story !== "loading" ? STATUS_MAP[story.review_status]?.label || "Story" : "Story"}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   {!story
                     ? "Tell us about your vision for regeneration. Your story helps us match you with the right mentors and investors."
-                    : story.review_status === "pending_review"
+                    : story !== "loading" && story.review_status === "pending_review"
                     ? "Your story is being reviewed by the SOL team."
-                    : story.review_status === "approved"
+                    : story !== "loading" && story.review_status === "approved"
                     ? "Your story was approved! You're now visible to potential mentors and investors."
-                    : story.review_status === "rejected"
+                    : story !== "loading" && story.review_status === "rejected"
                     ? `Revision needed: ${story.review_notes || "Please revise and resubmit."}`
                     : "Complete your story to get started."}
                 </p>

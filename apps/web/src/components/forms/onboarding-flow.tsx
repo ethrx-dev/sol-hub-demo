@@ -300,7 +300,7 @@ export function OnboardingFlow() {
                 </p>
               </div>
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {MENTOR_GUIDED_QUESTIONS[data.mentorType].map((q, i) => (
+                {MENTOR_GUIDED_QUESTIONS[data.mentorType as MentorType].map((q, i) => (
                   <div key={i} className="space-y-1">
                     <label className="text-sm font-medium">
                       Q{i + 1}. {q}
@@ -516,7 +516,6 @@ export function OnboardingFlow() {
                 </Button>
               )}
             </div>
-          </div>
           </div>
         </CardContent>
       </Card>
