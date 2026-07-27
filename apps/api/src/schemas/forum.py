@@ -57,7 +57,7 @@ class ForumReplyResponse(BaseModel):
 
 class CreateForumCategoryRequest(BaseModel):
     name: str
-    slug: str
+    slug: str | None = None
     description: str | None = None
     icon: str | None = None
     display_order: int = 0

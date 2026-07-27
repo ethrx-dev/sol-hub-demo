@@ -12,6 +12,7 @@ from src.schemas.match import MatchCreateRequest, MatchUpdateRequest, MatchRespo
 from src.schemas.common import PaginatedResponse
 from src.utils.email import send_match_notification
 from src.utils.notifications import create_notification
+from src.utils.notifications import notify_whitney_quality_match
 from src.schemas.match import MatchSuggestionResponse
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
@@ -95,8 +96,8 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
     if current_user.role == "admin":
         pass  # admins can create any match
     elif current_user.role == "innovator":
-        if mentor_id != current_user.id and investor_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Innovators can only express interest for themselves")
+        if project.innovator_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only create matches for your own projects")
     elif current_user.role == "mentor":
         if mentor_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Mentors can only create matches for themselves as mentor")
@@ -154,6 +155,24 @@ async def create_match(body: MatchCreateRequest, db: DbSession, current_user: Cu
     elif investor_id:
         matched_user = await db.get(User, investor_id)
 
+    # High-quality match alert: compute a quick compatibility score for mentor
+    # matches and notify Whitney when it crosses the threshold.
+    QUALITY_THRESHOLD = 70
+    if mentor_id and matched_user:
+        score = _quick_match_score(project, matched_user, innovator)
+        mentor_type = None
+        if matched_user.role_specific_data:
+            mentor_type = matched_user.role_specific_data.get("mentor_type")
+        if score >= QUALITY_THRESHOLD:
+            await notify_whitney_quality_match(
+                db=db,
+                project_title=project.title,
+                innovator_name=innovator.full_name if innovator else "an innovator",
+                mentor_name=matched_user.full_name,
+                score=score,
+                mentor_type=mentor_type,
+            )
+
     return MatchResponse(
         id=str(match.id),
         project_id=str(match.project_id),
@@ -190,6 +209,17 @@ async def update_match(match_id: uuid.UUID, body: MatchUpdateRequest, db: DbSess
 
     project = await db.get(Project, match.project_id)
     project_title = project.title if project else None
+
+    if body.status == "accepted":
+        innovator = await db.get(User, project.innovator_id) if project else None
+        if innovator and innovator.id != current_user.id:
+            await create_notification(
+                db=db,
+                user_id=str(innovator.id),
+                title="Match Accepted",
+                message=f"{current_user.full_name} accepted the match for {project_title}. Head to the workspace to start collaborating.",
+                notification_type="match_accepted",
+            )
 
     matched_user = None
     if match.mentor_id and match.mentor_id != current_user.id:
@@ -254,6 +284,13 @@ async def get_match_suggestions(
     if project.sub_sector:
         project_sectors.add(project.sub_sector.lower())
 
+    # Get innovator's preferred mentor type from their profile
+    innovator = await db.get(User, project.innovator_id)
+    preferred_mentor_type = None
+    if innovator and innovator.role_specific_data:
+        preferred_mentor_type = innovator.role_specific_data.get("mentor_type")
+    innovator_guided_answers = innovator.onboarding_responses if innovator else {}
+
     scored = []
     for u in users:
         score = 0
@@ -265,7 +302,21 @@ async def get_match_suggestions(
         if project.sub_sector and project.sub_sector.lower() in user_skills:
             score += 20
 
-        scored.append((u, min(score, 100)))
+        # Mentor-type compatibility scoring (only for mentor role)
+        mentor_type = None
+        if role == "mentor" and u.role_specific_data:
+            mentor_type = u.role_specific_data.get("mentor_type")
+            if mentor_type and preferred_mentor_type and mentor_type == preferred_mentor_type:
+                score += 30  # Strong bonus for exact mentor type match
+            elif mentor_type and preferred_mentor_type:
+                score += 10  # Partial bonus for any mentor type when innovator has preference
+
+        # Guided answer similarity scoring (if both have onboarding responses)
+        if u.onboarding_responses and innovator_guided_answers:
+            guided_score = calculate_guided_similarity(u.onboarding_responses, innovator_guided_answers)
+            score += guided_score
+
+        scored.append((u, min(score, 100), mentor_type))
 
     scored.sort(key=lambda x: x[1], reverse=True)
 
@@ -278,9 +329,72 @@ async def get_match_suggestions(
             skills=u.skills,
             sectors_of_interest=u.sectors_of_interest,
             score=s,
+            mentor_type=mt,
+            onboarding_responses=u.onboarding_responses if role == "mentor" else None,
         )
-        for u, s in scored[:20]
+        for u, s, mt in scored[:20]
     ]
+
+
+def calculate_guided_similarity(user_responses: dict, innovator_responses: dict) -> int:
+    """Calculate similarity score between guided Q&A responses (0-25 points)."""
+    if not user_responses or not innovator_responses:
+        return 0
+
+    common_keys = set(user_responses.keys()) & set(innovator_responses.keys())
+    if not common_keys:
+        return 0
+
+    matches = 0
+    for key in common_keys:
+        user_val = str(user_responses[key]).lower().strip()
+        innovator_val = str(innovator_responses[key]).lower().strip()
+        if user_val and innovator_val and user_val == innovator_val:
+            matches += 1
+
+    # Max 25 points for guided answer similarity
+    return min(int((matches / len(common_keys)) * 25), 25)
+
+
+def _quick_match_score(project, mentor: User, innovator: User | None) -> int:
+    """Compute a mentor↔project compatibility score (0-100) for Whitney alerts.
+
+    Mirrors the factor weighting used in get_match_suggestions:
+    sector overlap (25 each), skill match (20), mentor-type compatibility
+    (+30 exact / +10 partial), guided-answer similarity (up to 25).
+    """
+    score = 0
+
+    project_sectors = set()
+    if project.sector:
+        project_sectors.add(project.sector.lower())
+    if project.sub_sector:
+        project_sectors.add(project.sub_sector.lower())
+
+    user_sectors = {s.lower() for s in (mentor.sectors_of_interest or [])}
+    common_sectors = project_sectors & user_sectors
+    score += len(common_sectors) * 25
+
+    user_skills = {s.lower() for s in (mentor.skills or [])}
+    if project.sub_sector and project.sub_sector.lower() in user_skills:
+        score += 20
+
+    mentor_type = mentor.role_specific_data.get("mentor_type") if mentor.role_specific_data else None
+    preferred_type = (
+        innovator.role_specific_data.get("mentor_type")
+        if innovator and innovator.role_specific_data
+        else None
+    )
+    if mentor_type and preferred_type:
+        if mentor_type == preferred_type:
+            score += 30
+        else:
+            score += 10
+
+    if mentor.onboarding_responses and innovator and innovator.onboarding_responses:
+        score += calculate_guided_similarity(mentor.onboarding_responses, innovator.onboarding_responses)
+
+    return min(score, 100)
 
 
 @router.get("/{match_id}", response_model=MatchResponse)

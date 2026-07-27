@@ -55,7 +55,7 @@ class User(Base):
     event_attendances = relationship("EventAttendee", back_populates="user", cascade="all, delete-orphan")
     albums = relationship("Album", back_populates="author", cascade="all, delete-orphan")
     documents = relationship("DocLibraryItem", back_populates="author", cascade="all, delete-orphan")
-    blog_posts = relationship("BlogPost", back_populates="author", cascade="all, delete-orphan")
+    blog_posts = relationship("BlogPost", back_populates="author", foreign_keys="BlogPost.author_id", cascade="all, delete-orphan")
     activities = relationship("ActivityLog", back_populates="user", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="reporter", cascade="all, delete-orphan")
     pages = relationship("Page", back_populates="author", cascade="all, delete-orphan")

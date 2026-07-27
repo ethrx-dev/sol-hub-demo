@@ -36,6 +36,7 @@ export default function PublicLayout({
                 <li><Link href="/mentors" className="text-sm text-white/70 hover:text-primary transition-colors">Mentors</Link></li>
                 <li><Link href="/investors" className="text-sm text-white/70 hover:text-primary transition-colors">Conscious Investors</Link></li>
                 <li><Link href="/about" className="text-sm text-white/70 hover:text-primary transition-colors">About</Link></li>
+                <li><Link href="/resonance" className="text-sm text-white/70 hover:text-primary transition-colors">Resonance Gateway</Link></li>
                 <li><Link href="/become-a-member" className="text-sm text-white/70 hover:text-primary transition-colors">Become a Member</Link></li>
                 <li><Link href="/resources" className="text-sm text-white/70 hover:text-primary transition-colors">Resources</Link></li>
               </ul>

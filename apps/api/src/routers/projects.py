@@ -12,6 +12,7 @@ from src.schemas.workspace import DocumentResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key
 from src.utils.storage import upload_file
+from src.utils.notifications import notify_admins_new_project
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -41,6 +42,7 @@ async def create_project(body: ProjectCreateRequest, db: DbSession, current_user
     )
     db.add(project)
     await db.flush()
+    await notify_admins_new_project(db, project, current_user)
     return project
 
 
@@ -52,12 +54,16 @@ async def list_projects(
     status: str | None = Query(None),
     stage: str | None = Query(None),
     search: str | None = Query(None),
+    innovator_id: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
     query = select(Project).where(Project.is_deleted == False)
     count_query = select(func.count(Project.id)).where(Project.is_deleted == False)
 
+    if innovator_id:
+        query = query.where(Project.innovator_id == innovator_id)
+        count_query = count_query.where(Project.innovator_id == innovator_id)
     if sector:
         query = query.where(Project.sector == sector)
         count_query = count_query.where(Project.sector == sector)

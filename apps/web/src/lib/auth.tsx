@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { api } from "@/src/lib/api-client";
 
-export type UserRole = "innovator" | "mentor" | "investor" | "admin";
+export type UserRole = "innovator" | "mentor" | "investor" | "participant" | "admin";
 
 export interface User {
   id: string;
@@ -110,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         innovator: "/innovator/projects",
         mentor: "/mentor/browse",
         investor: "/investor/browse",
+        participant: "/participant",
       };
       router.push(user.onboarding_completed ? dashPaths[user.role] || "/" : "/onboarding");
     }

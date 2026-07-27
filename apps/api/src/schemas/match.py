@@ -22,6 +22,8 @@ class MatchSuggestionResponse(BaseModel):
     skills: list = []
     sectors_of_interest: list = []
     score: int = 0
+    mentor_type: str | None = None
+    onboarding_responses: dict | None = None
 
 
 class MatchResponse(BaseResponseWithUUID):

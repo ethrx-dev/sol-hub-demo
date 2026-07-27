@@ -15,7 +15,7 @@ interface BlogPost {
   author_avatar: string | null;
   published_at: string | null;
   created_at: string;
-  tags: string;
+  tags: string | string[];
   category_name: string | null;
 }
 
@@ -105,15 +105,18 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
           {post.title}
         </h1>
 
-        {post.tags && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {post.tags.split(",").filter(Boolean).map((tag) => (
-              <span key={tag} className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                #{tag.trim()}
-              </span>
-            ))}
-          </div>
-        )}
+        {post.tags && (() => {
+          const tagList = Array.isArray(post.tags) ? post.tags : post.tags.split(",").filter(Boolean);
+          return (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tagList.map((tag) => (
+                <span key={tag} className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                  #{tag.trim()}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
 
         <div
           className="mt-8 prose prose-lg max-w-none text-muted-foreground leading-relaxed"

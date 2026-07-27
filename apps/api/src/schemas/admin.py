@@ -84,3 +84,28 @@ class DashboardStatsResponse(BaseModel):
     total_resources: int = 0
     active_projects: int = 0
     revenue: float = 0.0
+
+
+class MatchSettingResponse(BaseModel):
+    id: int
+    sector_weight: int
+    skill_weight: int
+    mentor_exact_weight: int
+    mentor_partial_weight: int
+    guided_weight: int
+    quality_threshold: int
+    ai_enabled: bool
+    ai_weight: int
+
+    model_config = {"from_attributes": True}
+
+
+class MatchSettingUpdate(BaseModel):
+    sector_weight: int | None = None
+    skill_weight: int | None = None
+    mentor_exact_weight: int | None = None
+    mentor_partial_weight: int | None = None
+    guided_weight: int | None = None
+    quality_threshold: int | None = None
+    ai_enabled: bool | None = None
+    ai_weight: int | None = None

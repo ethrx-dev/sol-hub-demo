@@ -1,4 +1,5 @@
 import json
+import uuid
 import datetime
 
 import stripe
@@ -10,8 +11,10 @@ from src.config import settings
 from src.deps import DbSession, CurrentUser, CurrentAdmin
 from src.models.user import User
 from src.models.subscription import Subscription
+from src.models.donation import Donation
 from src.models.webhook_event import WebhookEvent
 from src.schemas.membership import PlanResponse, CheckoutRequest, CheckoutResponse, PortalResponse
+from src.utils.notifications import create_notification
 
 router = APIRouter(prefix="/api/membership", tags=["membership"])
 
@@ -156,39 +159,80 @@ async def stripe_webhook(request: Request, db: DbSession):
         return JSONResponse(content={"received": True, "duplicate": True})
 
     if event_type == "checkout.session.completed":
-        user_id = data.get("metadata", {}).get("user_id")
-        customer_id = data.get("customer")
-        subscription_id = data.get("subscription")
-        if user_id and subscription_id:
-            user_result = await db.execute(select(User).where(User.id == user_id))
-            user = user_result.scalar_one_or_none()
-            if user and not user.stripe_customer_id:
-                user.stripe_customer_id = customer_id
+        mode = data.get("mode", "payment")
 
-            try:
-                sub = stripe.Subscription.retrieve(subscription_id)
-                price_id = sub.get("items", {}).get("data", [{}])[0].get("price", {}).get("id")
-                status_sub = sub.get("status", "active")
+        if mode == "payment":
+            amount = data.get("amount_total", 0)
+            currency = data.get("currency", "usd")
+            customer_details = data.get("customer_details", {}) or {}
+            donor_name = customer_details.get("name")
+            donor_email = customer_details.get("email", "unknown@donation")
+            payment_intent = data.get("payment_intent")
+            session_id = data.get("id")
+            receipt_url = data.get("receipt_url")
+            user_id = data.get("metadata", {}).get("user_id")
 
-                sub_result = await db.execute(select(Subscription).where(Subscription.user_id == user_id))
-                subscription = sub_result.scalar_one_or_none()
-                if not subscription:
-                    subscription = Subscription(user_id=user_id)
-                    db.add(subscription)
+            donation = Donation(
+                id=uuid.uuid4(),
+                amount=amount,
+                currency=currency,
+                donor_name=donor_name,
+                donor_email=donor_email,
+                user_id=user_id,
+                stripe_payment_intent=payment_intent,
+                stripe_session_id=session_id,
+                status="completed",
+                receipt_url=receipt_url,
+            )
+            db.add(donation)
+            await db.flush()
 
-                subscription.stripe_subscription_id = subscription_id
-                subscription.stripe_price_id = price_id
-                subscription.status = status_sub
-                subscription.tier = _tier_from_price(price_id)
-                if sub.get("current_period_start"):
-                    subscription.current_period_start = datetime.datetime.fromtimestamp(sub["current_period_start"], tz=datetime.timezone.utc)
-                if sub.get("current_period_end"):
-                    subscription.current_period_end = datetime.datetime.fromtimestamp(sub["current_period_end"], tz=datetime.timezone.utc)
+            admins = await db.execute(
+                select(User).where(User.role.in_(["admin", "super_admin"]))
+            )
+            for admin in admins.scalars().all():
+                await create_notification(
+                    db=db,
+                    user_id=str(admin.id),
+                    title="New Donation Received",
+                    message=f"${amount / 100:.2f} donation received from {donor_name or donor_email}.",
+                    notification_type="donation",
+                )
 
-                if user:
-                    user.membership_tier = subscription.tier
-            except Exception:
-                pass
+        elif mode == "subscription":
+            user_id = data.get("metadata", {}).get("user_id")
+            customer_id = data.get("customer")
+            subscription_id = data.get("subscription")
+            if user_id and subscription_id:
+                user_result = await db.execute(select(User).where(User.id == user_id))
+                user = user_result.scalar_one_or_none()
+                if user and not user.stripe_customer_id:
+                    user.stripe_customer_id = customer_id
+
+                try:
+                    sub = stripe.Subscription.retrieve(subscription_id)
+                    price_id = sub.get("items", {}).get("data", [{}])[0].get("price", {}).get("id")
+                    status_sub = sub.get("status", "active")
+
+                    sub_result = await db.execute(select(Subscription).where(Subscription.user_id == user_id))
+                    subscription = sub_result.scalar_one_or_none()
+                    if not subscription:
+                        subscription = Subscription(user_id=user_id)
+                        db.add(subscription)
+
+                    subscription.stripe_subscription_id = subscription_id
+                    subscription.stripe_price_id = price_id
+                    subscription.status = status_sub
+                    subscription.tier = _tier_from_price(price_id)
+                    if sub.get("current_period_start"):
+                        subscription.current_period_start = datetime.datetime.fromtimestamp(sub["current_period_start"], tz=datetime.timezone.utc)
+                    if sub.get("current_period_end"):
+                        subscription.current_period_end = datetime.datetime.fromtimestamp(sub["current_period_end"], tz=datetime.timezone.utc)
+
+                    if user:
+                        user.membership_tier = subscription.tier
+                except Exception:
+                    pass
 
     elif event_type == "invoice.paid":
         subscription_id = data.get("subscription")

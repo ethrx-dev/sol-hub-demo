@@ -71,6 +71,7 @@ PILLAR_ROLE_MAP = {
 async def submit_video(
     pillar: str = Form(...),
     video: UploadFile = File(...),
+    mentor_type: str | None = Form(None),
     db: DbSession = None,
     current_user: User = Depends(get_current_user),
 ):
@@ -85,6 +86,20 @@ async def submit_video(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Only {expected_role}s can submit to the {pillar} pillar",
+        )
+
+    # Validate mentor_type if provided (only for mentors pillar)
+    if mentor_type and pillar == "mentors":
+        valid_types = ["psych", "prof", "coach"]
+        if mentor_type not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid mentor_type. Must be one of: {', '.join(valid_types)}",
+            )
+    elif mentor_type and pillar != "mentors":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="mentor_type is only valid for mentors pillar",
         )
 
     if not video.content_type or not video.content_type.startswith("video/"):
@@ -110,11 +125,14 @@ async def submit_video(
     storage_key = f"pillar-submissions/{pillar}/{uuid.uuid4()}"
     url = await upload_file(storage_key, data, mime)
 
-    direct_url = f"{settings.S3_PUBLIC_URL}/{settings.S3_BUCKET}/{storage_key}"
+    from src.utils.storage import get_public_url
+
+    direct_url = get_public_url(storage_key)
 
     submission = PillarSubmission(
         id=str(uuid.uuid4()),
         pillar=pillar,
+        mentor_type=mentor_type if pillar == "mentors" else None,
         video_size=len(data),
         user_id=current_user.id,
         storage_url=direct_url,
@@ -147,7 +165,9 @@ async def list_submissions(
     if current_user.role not in ("admin", "super_admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
-    query = select(PillarSubmission).options(selectinload(PillarSubmission.user)).order_by(PillarSubmission.created_at.desc())
+    query = select(PillarSubmission).options(
+        selectinload(PillarSubmission.user).selectinload(User.profile)
+    ).order_by(PillarSubmission.created_at.desc())
     if pillar:
         query = query.where(PillarSubmission.pillar == pillar)
 
@@ -160,23 +180,27 @@ async def list_submissions(
     result = await db.execute(query.offset(skip).limit(limit))
     submissions = result.scalars().all()
 
-    from src.utils.storage import generate_presigned_url
+    from src.utils.storage import get_public_url
 
     items = []
     for s in submissions:
         if s.storage_key:
-            url = generate_presigned_url(s.storage_key)
+            url = get_public_url(s.storage_key)
         else:
             url = s.storage_url
+        profile = s.user.profile if s.user and s.user.profile else None
         items.append({
             "id": s.id,
             "pillar": s.pillar,
+            "mentorType": s.mentor_type,
             "videoSize": s.video_size,
             "storageUrl": url,
             "userId": str(s.user_id) if s.user_id else None,
             "userName": s.user.full_name if s.user else None,
             "userEmail": s.user.email if s.user else None,
             "createdAt": s.created_at.isoformat() if s.created_at else None,
+            "roleSpecificData": profile.role_specific_data if profile else None,
+            "onboardingResponses": profile.onboarding_responses if profile else None,
         })
 
     return {"items": items, "total": total}
@@ -195,3 +219,22 @@ async def pillar_stats(db: DbSession = None):
         "mentors": stats.get("mentors", 0),
         "investors": stats.get("investors", 0),
     }
+
+
+@router.delete("/submissions/{submission_id}")
+async def delete_submission(
+    submission_id: str,
+    db: DbSession = None,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    result = await db.execute(select(PillarSubmission).where(PillarSubmission.id == submission_id))
+    submission = result.scalar_one_or_none()
+    if not submission:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+
+    await db.delete(submission)
+    await db.commit()
+    return {"status": "deleted"}

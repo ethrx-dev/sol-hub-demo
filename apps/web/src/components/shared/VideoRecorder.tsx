@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MENTOR_VIDEO_QUESTIONS, MentorType } from "@/src/lib/mentor/types";
 
 type Pillar = "innovators" | "mentors" | "investors";
 
@@ -8,7 +9,10 @@ interface Question {
   label: string;
 }
 
-const QUESTIONS: Record<Pillar, Question[]> = {
+const SECONDS_PER_QUESTION = 30;
+const TOTAL_SECONDS = SECONDS_PER_QUESTION * 3;
+
+const DEFAULT_QUESTIONS: Record<Pillar, Question[]> = {
   innovators: [
     { label: "What's the problem? What do you feel is wrong?" },
     { label: "Describe your solution or why it's important to solve" },
@@ -26,12 +30,17 @@ const QUESTIONS: Record<Pillar, Question[]> = {
   ],
 };
 
-const SECONDS_PER_QUESTION = 30; // 30s per question = 90s total
-const TOTAL_SECONDS = SECONDS_PER_QUESTION * 3;
+// Convert the string[] question bank into the {label} shape used by the UI.
+const mentorVideoQuestions: Record<MentorType, Question[]> = Object.fromEntries(
+  (Object.keys(MENTOR_VIDEO_QUESTIONS) as MentorType[]).map((k) => [
+    k,
+    MENTOR_VIDEO_QUESTIONS[k].map((label) => ({ label })),
+  ])
+) as Record<MentorType, Question[]>;
 
 type RecorderState = "idle" | "countdown" | "recording" | "preview" | "uploading" | "done";
 
-export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
+export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; mentorType?: MentorType }) {
   const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<RecorderState>("idle");
   const [activeQuestion, setActiveQuestion] = useState(0);
@@ -48,8 +57,11 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cameraReadyRef = useRef(false);
+  const recordingStartedRef = useRef(false);
 
-  const questions = QUESTIONS[pillar];
+  const questions = pillar === "mentors" && mentorType
+    ? mentorVideoQuestions[mentorType]
+    : DEFAULT_QUESTIONS[pillar];
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -160,33 +172,33 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
 
   const startCountdown = useCallback(() => {
     setError(null);
-    setCountdown(3);
+    setCountdown(-1);
     setState("countdown");
     cameraReadyRef.current = false;
+    recordingStartedRef.current = false;
     startCamera().then((stream) => {
       cameraReadyRef.current = true;
-      if (stream) streamRef.current = stream;
+      if (stream) {
+        streamRef.current = stream;
+        setCountdown(3);
+      } else {
+        setError("Camera access is required. Please allow camera and microphone permissions.");
+        setState("idle");
+      }
     });
   }, [startCamera]);
 
   useEffect(() => {
-    if (state !== "countdown" || countdown <= 0) return;
-    const id = setTimeout(() => {
-      setCountdown((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          if (cameraReadyRef.current && streamRef.current) {
-            startRecording(streamRef.current);
-          } else {
-            setError("Camera access is required. Please allow camera and microphone permissions.");
-            setState("idle");
-          }
-        }
-        return next;
-      });
-    }, 1000);
-    return () => clearTimeout(id);
-  }, [state, countdown]);
+    if (state !== "countdown") return;
+    if (countdown < 0) return;
+    if (countdown > 0) {
+      const id = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
+      return () => clearTimeout(id);
+    }
+    if (recordingStartedRef.current) return;
+    recordingStartedRef.current = true;
+    startRecording(streamRef.current!);
+  }, [state, countdown, startRecording]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
@@ -201,11 +213,15 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
     try {
       const formData = new FormData();
       formData.append("pillar", pillar);
+      if (mentorType) {
+        formData.append("mentor_type", mentorType);
+      }
       const ext = recordedBlob.type.includes("mp4") ? "mp4" : "webm";
       formData.append("video", recordedBlob, `intro.${ext}`);
 
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:8000/api/pillars/submit-video", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+      const res = await fetch(`${apiUrl}/pillars/submit-video`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -222,7 +238,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
       setError(message);
       setState("preview");
     }
-  }, [recordedBlob, pillar]);
+  }, [recordedBlob, pillar, mentorType]);
 
   const reset = useCallback(() => {
     cleanup();
@@ -232,6 +248,7 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
     setError(null);
     setActiveQuestion(0);
     setElapsed(0);
+    recordingStartedRef.current = false;
   }, [cleanup]);
 
   const remaining = TOTAL_SECONDS - elapsed;
@@ -287,7 +304,14 @@ export default function VideoRecorder({ pillar }: { pillar: Pillar }) {
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="text-8xl font-bold font-heading">{countdown}</span>
+            {countdown > 0 ? (
+              <span className="text-8xl font-bold font-heading">{countdown}</span>
+            ) : (
+              <div className="text-center">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                <p className="mt-4 text-sm text-white/70">Preparing camera...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

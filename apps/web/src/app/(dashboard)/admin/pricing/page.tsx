@@ -42,7 +42,7 @@ export default function AdminPricingPage() {
 
   const savePlan = async (tier: string) => {
     try {
-      await api.patch(`/admin/plans/${tier}`, editForm);
+      await api.patch(`/membership/plans/${tier}`, editForm);
       setPlans((prev) => prev.map((p) => (p.tier === tier ? { ...p, ...editForm } as Plan : p)));
       toast.success("Plan updated");
       setEditingTier(null);

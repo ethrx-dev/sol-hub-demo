@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from src.models.blog import PostStatus
+from src.models.blog import PostStatus, ReviewStatus
 
 
 class BlogCategoryResponse(BaseModel):
@@ -30,8 +30,10 @@ class BlogPostResponse(BaseModel):
     author_avatar: str | None = None
     category_id: UUID | None = None
     category_name: str | None = None
-    tags: str = ""
+    tags: list[str] = []
     status: PostStatus = PostStatus.draft
+    review_status: ReviewStatus = ReviewStatus.none
+    review_notes: str | None = None
     is_featured: bool = False
     view_count: int = 0
     published_at: datetime | None = None
@@ -48,7 +50,7 @@ class CreateBlogPostRequest(BaseModel):
     excerpt: str | None = Field(None, max_length=500)
     cover_image: str | None = Field(None, max_length=512)
     category_id: str | None = None
-    tags: str = Field(default="", max_length=500)
+    tags: list[str] = Field(default_factory=list)
     status: PostStatus = PostStatus.draft
     is_featured: bool = False
 
@@ -59,7 +61,7 @@ class UpdateBlogPostRequest(BaseModel):
     excerpt: str | None = None
     cover_image: str | None = None
     category_id: str | None = None
-    tags: str | None = None
+    tags: list[str] | None = None
     status: PostStatus | None = None
     is_featured: bool | None = None
 

@@ -16,6 +16,7 @@ class PillarSubmission(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     storage_url = Column(Text, nullable=True)
     storage_key = Column(String(255), nullable=True)
+    mentor_type = Column(String(32), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User")

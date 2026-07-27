@@ -18,7 +18,12 @@ import { api } from "@/src/lib/api-client";
 import { toast } from "sonner";
 import VideoRecorder from "@/src/components/shared/VideoRecorder";
 import { useTourStore } from "@/src/stores/tour-store";
-import { Compass } from "lucide-react";
+import { Compass, Radio, Check } from "lucide-react";
+import {
+  MENTOR_TYPES,
+  MENTOR_GUIDED_QUESTIONS,
+  MentorType,
+} from "@/src/lib/mentor/types";
 
 const SECTORS = [
   "CleanTech", "HealthTech", "FinTech", "EdTech",
@@ -38,6 +43,7 @@ const PILLAR_LABELS: Record<string, string> = {
   innovator: "Innovator",
   mentor: "Mentor",
   investor: "Conscious Investor",
+  participant: "Participant",
 };
 
 const PILLAR_MAP: Record<string, "innovators" | "mentors" | "investors"> = {
@@ -57,26 +63,62 @@ export function OnboardingFlow() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<Record<string, string>>({});
+  const [guidedAnswers, setGuidedAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   const update = (field: string, value: string) =>
     setData((prev) => ({ ...prev, [field]: value }));
 
+  const updateGuided = (field: string, value: string) =>
+    setGuidedAnswers((prev) => ({ ...prev, [field]: value }));
+
   const handleComplete = async () => {
     setSubmitting(true);
     try {
-      await api.patch("/users/me", {
+      if (role === "innovator" && data.story) {
+        await api.post("/blog/stories", { content: data.story }).catch(() => {});
+      }
+
+      // Prepare profile update payload
+      const payload: Record<string, unknown> = {
         onboarding_completed: true,
-        skills: data.skills?.split(",").map((s: string) => s.trim()).filter(Boolean) || undefined,
-        sectors_of_interest: data.sector ? [data.sector] : undefined,
-        bio: data.bio || undefined,
-      });
+      };
+
+      // Role-specific profile fields
+      if (role === "innovator") {
+        payload.skills = data.skills?.split(",").map((s: string) => s.trim()).filter(Boolean) || undefined;
+        payload.sectors_of_interest = data.sector ? [data.sector] : undefined;
+        payload.bio = data.bio || undefined;
+      } else if (role === "mentor") {
+        payload.role_specific_data = {
+          ...(data.mentorType ? { mentor_type: data.mentorType } : {}),
+          years_experience: data.yearsExperience ? parseInt(data.yearsExperience) : undefined,
+          mentorship_style: data.mentorshipStyle || undefined,
+          expertise: data.expertise?.split(",").map((s: string) => s.trim()).filter(Boolean) || undefined,
+        };
+        // Store guided Q&A in onboarding_responses
+        if (data.mentorType && Object.keys(guidedAnswers).length > 0) {
+          payload.onboarding_responses = {
+            mentor_type: data.mentorType,
+            guided_answers: guidedAnswers,
+          };
+        }
+      } else if (role === "investor") {
+        payload.role_specific_data = {
+          investment_range: data.investmentRange || undefined,
+          impact_focus: data.impactFocus || undefined,
+          involvement_level: data.involvement || undefined,
+        };
+      }
+
+      await api.patch("/users/me", payload);
       await refreshUser();
       toast.success("Welcome to SOL!");
       const dashboards: Record<string, string> = {
         innovator: "/innovator/projects",
         mentor: "/mentor/browse",
         investor: "/investor/browse",
+        participant: "/participant",
         admin: "/admin",
       };
       router.push(dashboards[user?.role || ""] || "/");
@@ -91,7 +133,23 @@ export function OnboardingFlow() {
 
   const role = user.role;
 
-  const totalSteps = 5;
+  // Calculate total steps based on role
+  let totalSteps = 5;
+  const stepLabels: string[] = [];
+
+  if (role === "innovator") {
+    totalSteps = 6;
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "Your Story", "All Set");
+  } else if (role === "mentor") {
+    totalSteps = 7; // Welcome, Becoming Seen, Mentor Type, Record Video, Guided Q&A, Profile, All Set
+    stepLabels.push("Welcome", "Becoming Seen", "Mentor Type", "Record Video", "Guided Q&A", "Profile", "All Set");
+  } else if (role === "investor") {
+    totalSteps = 5;
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "All Set");
+  } else {
+    totalSteps = 5;
+    stepLabels.push("Welcome", "Becoming Seen", "Record Video", "Profile", "All Set");
+  }
 
   return (
     <div className="mx-auto max-w-lg">
@@ -99,7 +157,7 @@ export function OnboardingFlow() {
       <div className="mb-6">
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
           <span>Step {step} of {totalSteps}</span>
-          <span>{["Welcome", "Your Role", "Record Video", "Profile", "All Set"][step - 1]}</span>
+          <span>{stepLabels[step - 1]}</span>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: totalSteps }, (_, i) => (
@@ -123,7 +181,7 @@ export function OnboardingFlow() {
               </div>
               <h2 className="text-2xl font-bold font-heading">Welcome to SOL!</h2>
               <p className="text-sm text-muted-foreground">
-                You&apos;re now a Private Member of Spaces of Learning. Here&apos;s what you can do:
+                Before any title is named, we&apos;d like to meet you as you are.
               </p>
               <div className="space-y-3 text-left mt-4">
                 {WELCOME_STEPS.map((s, i) => (
@@ -141,29 +199,74 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {/* Step 2: Your Role */}
+          {/* Step 2: Becoming Seen */}
           {step === 2 && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center mb-2">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <span className="text-2xl font-bold text-primary font-heading">
-                    {role === "innovator" ? "I" : role === "mentor" ? "M" : "CI"}
+                    {role === "innovator" ? "I" : role === "mentor" ? "M" : role === "investor" ? "CI" : "P"}
                   </span>
                 </div>
               </div>
-              <h2 className="text-2xl font-bold font-heading">You Joined as a {PILLAR_LABELS[role]}</h2>
+              <h2 className="text-2xl font-bold font-heading">What&apos;s true for you?</h2>
               <p className="text-sm text-muted-foreground">
-                {role === "innovator"
-                  ? "You'll submit ideas, get matched with mentors and investors, and track your project milestones."
-                  : role === "mentor"
-                  ? "You'll browse projects, share your expertise, and guide the next generation of entrepreneurs."
-                  : "You'll discover vetted projects, invest consciously, and track your portfolio."}
+                There&apos;s no test here and nothing to qualify for. As we meet you, the shape of
+                your contribution &mdash; as an innovator, mentor, collaborator, or investor &mdash;
+                comes into view. You&apos;ll see what came into focus for you on the next step.
               </p>
             </div>
           )}
 
-          {/* Step 3: Record Video */}
-          {step === 3 && (
+          {/* Step 3: Mentor Type Selection (mentor only) */}
+          {step === 3 && role === "mentor" && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">What Type of Mentor Are You?</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  So we can reflect your own way of guiding back to you.
+                </p>
+              </div>
+              <div className="grid gap-4">
+                {MENTOR_TYPES.map((type) => (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => update("mentorType", type.value)}
+                    className={`relative rounded-lg border-2 p-4 transition-all text-left ${
+                      data.mentorType === type.value
+                        ? "border-primary bg-primary/5"
+                        : "border-input hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        data.mentorType === type.value
+                          ? "border-primary bg-primary"
+                          : "border-input"
+                      }`}>
+                        {data.mentorType === type.value && (
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-base">{type.label}</h3>
+                        <p className="text-sm text-muted-foreground mt-0.5">{type.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {data.mentorType && (
+                <p className="text-xs text-muted-foreground text-center">
+                  You selected: <span className="font-medium">{MENTOR_TYPES.find(t => t.value === data.mentorType)?.label}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Step 3/4: Record Video */}
+          {((step === 3 && role !== "mentor") || (step === 4 && role === "mentor")) && (
             <div className="space-y-4">
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">Introduce Yourself</h2>
@@ -171,12 +274,52 @@ export function OnboardingFlow() {
                   Record a 90-second video answering 3 questions about your journey.
                 </p>
               </div>
-              <VideoRecorder pillar={PILLAR_MAP[role] || "innovators"} />
+              <VideoRecorder
+                pillar={PILLAR_MAP[role] || "innovators"}
+                mentorType={role === "mentor" ? (data.mentorType as MentorType) : undefined}
+              />
+              {(role === "investor" || role === "participant") && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Optional — you can record a video introduction now, or skip and do it later from your profile.
+                </p>
+              )}
             </div>
           )}
 
-          {/* Step 4: Profile */}
-          {step === 4 && (
+          {/* Step 4/5: Guided Q&A (mentor only) */}
+          {step === 5 && role === "mentor" && data.mentorType && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">Tell Us More</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Answer a few questions so we can reflect your way of guiding back to you.
+                  <br />
+                  <span className="font-medium text-primary">
+                    {MENTOR_TYPES.find(t => t.value === data.mentorType)?.label} Focus
+                  </span>
+                </p>
+              </div>
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                {MENTOR_GUIDED_QUESTIONS[data.mentorType as MentorType].map((q, i) => (
+                  <div key={i} className="space-y-1">
+                    <label className="text-sm font-medium">
+                      Q{i + 1}. {q}
+                    </label>
+                    <textarea
+                      className="w-full min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Your answer..."
+                      value={guidedAnswers[`q${i}`] || ""}
+                      onChange={(e) => updateGuided(`q${i}`, e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 4/5/6: Profile */}
+          {((step === 4 && role !== "mentor") || (step === 5 && role === "innovator") || (step === 6 && role === "mentor")) && (
             <div className="space-y-4">
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">Complete Your Profile</h2>
@@ -264,11 +407,38 @@ export function OnboardingFlow() {
                   </div>
                 </>
               )}
+              {role === "participant" && (
+                <div className="text-sm text-muted-foreground text-center py-4">
+                  You can update your profile details later from your settings.
+                </div>
+              )}
             </div>
           )}
 
-          {/* Step 5: All Set */}
-          {step === 5 && (
+          {/* Step 5/6: Your Story (innovator only) */}
+          {step === 5 && role === "innovator" && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold font-heading">Share Your Story</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  What does regeneration mean to you? Tell us about your vision, your journey,
+                  and what drives you to create change.
+                </p>
+              </div>
+              <textarea
+                className="w-full min-h-[200px] rounded-lg border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Share your story..."
+                value={data.story || ""}
+                onChange={(e) => update("story", e.target.value)}
+              />
+                <p className="text-xs text-muted-foreground text-center">
+                  Your story helps us meet you as you are, so the collaborators and contributors who resonate with you can come into view.
+                </p>
+            </div>
+          )}
+
+          {/* Final Step: All Set */}
+          {step === totalSteps && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center mb-2">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -287,7 +457,7 @@ export function OnboardingFlow() {
                     <p className="text-xs text-muted-foreground">Feeds, groups, forums, events, and more</p>
                   </div>
                 </Link>
-                <Link href={role === "innovator" ? "/innovator/projects" : role === "mentor" ? "/mentor/browse" : "/investor/browse"} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
+                <Link href={role === "innovator" ? "/innovator/projects" : role === "mentor" ? "/mentor/browse" : role === "investor" ? "/investor/browse" : "/participant"} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">D</span>
                   <div>
                     <p className="text-sm font-medium">Visit Your Dashboard</p>
@@ -326,15 +496,26 @@ export function OnboardingFlow() {
             >
               Back
             </Button>
-            {step < totalSteps ? (
-              <Button onClick={() => setStep((s) => s + 1)}>
-                Continue
-              </Button>
-            ) : (
-              <Button onClick={handleComplete} loading={submitting}>
-                Go to Dashboard
-              </Button>
-            )}
+            <div className="flex items-center gap-3">
+              {((step === 3 && role !== "mentor") || (step === 4 && role === "mentor")) && role !== "innovator" && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s + 1)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Skip
+                </button>
+              )}
+              {step < totalSteps ? (
+                <Button onClick={() => setStep((s) => s + 1)}>
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleComplete} loading={submitting}>
+                  Go to Dashboard
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
@@ -15,6 +16,7 @@ interface MatchCardProps {
   status: string;
   onAccept?: () => void;
   onDecline?: () => void;
+  viewerRole?: "innovator" | "mentor" | "investor";
 }
 
 const statusColors: Record<string, "warning" | "success" | "destructive" | "default"> = {
@@ -33,6 +35,7 @@ export function MatchCard({
   status,
   onAccept,
   onDecline,
+  viewerRole,
 }: MatchCardProps) {
   return (
     <Card>
@@ -62,7 +65,7 @@ export function MatchCard({
           </div>
         </div>
 
-        {status === "pending" && (
+        {status === "pending" && onAccept && (
           <div className="mt-4 flex gap-2">
             <Button size="sm" onClick={onAccept}>
               Accept
@@ -70,6 +73,34 @@ export function MatchCard({
             <Button size="sm" variant="outline" onClick={onDecline}>
               Decline
             </Button>
+          </div>
+        )}
+
+        {status === "accepted" && (
+          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+            <p className="text-sm font-semibold text-primary">
+              {viewerRole === "mentor" ? "You accepted this match!" : "A match was accepted!"}
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              {viewerRole === "mentor" ? (
+                <>
+                  <li>Introduce yourself in the project workspace</li>
+                  <li>Review their milestones and project status</li>
+                  <li>Schedule a kickoff call</li>
+                </>
+              ) : (
+                <>
+                  <li>Welcome them in the workspace</li>
+                  <li>Share your project progress and milestones</li>
+                  <li>Schedule your first check-in</li>
+                </>
+              )}
+            </ol>
+            <Link href="/workspaces">
+              <Button size="sm" variant="outline" className="mt-2 w-full">
+                Go to Workspace
+              </Button>
+            </Link>
           </div>
         )}
       </CardContent>
