@@ -19,6 +19,7 @@ from src.models.post import Post
 from src.models.resource import Resource
 from src.models.blog import BlogPost, ReviewStatus
 from src.models.donation import Donation
+from src.models.match_setting import MatchSetting
 from src.schemas.blog import BlogPostResponse
 from src.schemas.admin import (
     AdminSeedRequest,
@@ -30,6 +31,8 @@ from src.schemas.admin import (
     AdminPostResponse,
     AdminResourceResponse,
     DashboardStatsResponse,
+    MatchSettingResponse,
+    MatchSettingUpdate,
 )
 from src.schemas.auth import TokenResponse
 from src.schemas.project import ProjectResponse
@@ -639,3 +642,35 @@ async def list_donations(
         "total": total,
         "totalAmount": total_amount,
     }
+
+
+# ── Match Settings ─────────────────────────────────────────────────
+
+async def _get_or_create_match_settings(db: DbSession):
+    result = await db.execute(select(MatchSetting).limit(1))
+    row = result.scalar_one_or_none()
+    if not row:
+        row = MatchSetting(id=1)
+        db.add(row)
+        await db.flush()
+    return row
+
+
+@router.get("/match-settings", response_model=MatchSettingResponse)
+async def get_match_settings(db: DbSession, current_admin: CurrentAdmin):
+    row = await _get_or_create_match_settings(db)
+    return row
+
+
+@router.put("/match-settings", response_model=MatchSettingResponse)
+async def update_match_settings(
+    body: MatchSettingUpdate,
+    db: DbSession,
+    current_admin: CurrentAdmin,
+):
+    row = await _get_or_create_match_settings(db)
+    update_data = body.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(row, key, value)
+    await db.flush()
+    return row

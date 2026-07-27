@@ -32,7 +32,6 @@ const navLinks = [
     ],
   },
   { href: "/about", label: "About" },
-  { href: "/resonance", label: "Resonance Gateway" },
   { href: "/services", label: "Services" },
   { href: "/blog", label: "Blog" },
   { href: "/donate", label: "Donate" },
