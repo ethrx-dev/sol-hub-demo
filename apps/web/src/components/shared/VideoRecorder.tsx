@@ -28,6 +28,7 @@ const DEFAULT_QUESTIONS: Record<Pillar, Question[]> = {
     { label: "What resources do you have? (Land, capital, experience)" },
     { label: "Besides money, what do you see as your Return on Investment?" },
   ],
+  participants: [],
 };
 
 // Convert the string[] question bank into the {label} shape used by the UI.
@@ -65,9 +66,6 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
     : pillar === "mentors" && mentorType
       ? mentorVideoQuestions[mentorType]
       : DEFAULT_QUESTIONS[pillar];
-
-  const totalSeconds = isParticipant ? 0 : TOTAL_SECONDS;
-  const questionSeconds = isParticipant ? 0 : SECONDS_PER_QUESTION - (elapsed % SECONDS_PER_QUESTION);
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -168,11 +166,9 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
     timerRef.current = setInterval(() => {
       seconds++;
       setElapsed(seconds);
-      if (!isParticipant) {
-        setActiveQuestion(Math.min(Math.floor(seconds / SECONDS_PER_QUESTION), 2));
-      }
+      setActiveQuestion(Math.min(Math.floor(seconds / SECONDS_PER_QUESTION), 2));
 
-      if (!isParticipant && seconds >= TOTAL_SECONDS) {
+      if (seconds >= TOTAL_SECONDS) {
         if (recorder.state === "recording") recorder.stop();
       }
     }, 1000);
@@ -259,7 +255,7 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
     recordingStartedRef.current = false;
   }, [cleanup]);
 
-  const remaining = totalSeconds - elapsed;
+  const remaining = TOTAL_SECONDS - elapsed;
 
   if (!mounted) return null;
 
@@ -277,7 +273,7 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
         <h3 className="text-lg font-bold font-heading">Record Your Intro</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           {isParticipant
-            ? "Record a short video introducing yourself."
+            ? "Record a 90-second video introducing yourself."
             : "Record a 90-second video introducing yourself. Three questions, 30 seconds each."
           }
         </p>
@@ -345,44 +341,40 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
           <div className="absolute top-3 left-3 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs font-medium">REC</span>
-            {!isParticipant && (
-              <span className="text-xs tabular-nums ml-2">
-                {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
-              </span>
-            )}
+            <span className="text-xs tabular-nums ml-2">
+              {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
+            </span>
+          </div>
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <span className="text-xs bg-white/20 rounded-full px-2.5 py-1">
+              {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} / 1:30
+            </span>
           </div>
           {!isParticipant && (
-            <div className="absolute top-3 right-3 flex items-center gap-2">
-              <span className="text-xs bg-white/20 rounded-full px-2.5 py-1">
-                {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} / 1:30
-              </span>
-            </div>
-          )}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 space-y-3 max-w-[200px]">
-            {!isParticipant && questions.map((q, i) => (
-              <div
-                key={i}
-                className={`rounded-lg px-3 py-2 text-xs transition-all duration-300 ${
-                  i === activeQuestion
-                    ? "bg-primary/90 text-white font-semibold scale-105"
-                    : "bg-black/50 text-white/60"
-                }`}
-              >
-                <span className="font-bold mr-1">Q{i + 1}:</span>
-                {q.label}
-              </div>
-            ))}
-          </div>
-          {!isParticipant && (
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 space-y-3 max-w-[200px]">
+              {questions.map((q, i) => (
                 <div
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
-                  style={{ width: `${(elapsed / TOTAL_SECONDS) * 100}%` }}
-                />
-              </div>
+                  key={i}
+                  className={`rounded-lg px-3 py-2 text-xs transition-all duration-300 ${
+                    i === activeQuestion
+                      ? "bg-primary/90 text-white font-semibold scale-105"
+                      : "bg-black/50 text-white/60"
+                  }`}
+                >
+                  <span className="font-bold mr-1">Q{i + 1}:</span>
+                  {q.label}
+                </div>
+              ))}
             </div>
           )}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300 rounded-full"
+                style={{ width: `${(elapsed / TOTAL_SECONDS) * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
         <button
           onClick={stopRecording}
