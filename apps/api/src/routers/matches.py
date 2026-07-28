@@ -13,6 +13,8 @@ from src.schemas.common import PaginatedResponse
 from src.utils.email import send_match_notification
 from src.utils.notifications import create_notification
 from src.utils.notifications import notify_whitney_quality_match
+from src.utils.ai_scoring import score_with_ai
+from src.models.match_setting import MatchSetting
 from src.schemas.match import MatchSuggestionResponse
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
@@ -284,41 +286,81 @@ async def get_match_suggestions(
     if project.sub_sector:
         project_sectors.add(project.sub_sector.lower())
 
-    # Get innovator's preferred mentor type from their profile
     innovator = await db.get(User, project.innovator_id)
     preferred_mentor_type = None
     if innovator and innovator.role_specific_data:
         preferred_mentor_type = innovator.role_specific_data.get("mentor_type")
     innovator_guided_answers = innovator.onboarding_responses if innovator else {}
 
+    ms_result = await db.execute(select(MatchSetting).limit(1))
+    match_settings = ms_result.scalar_one_or_none()
+    sw = match_settings.sector_weight if match_settings else 25
+    skw = match_settings.skill_weight if match_settings else 20
+    mew = match_settings.mentor_exact_weight if match_settings else 30
+    mpw = match_settings.mentor_partial_weight if match_settings else 10
+    gw = match_settings.guided_weight if match_settings else 25
+    threshold = match_settings.quality_threshold if match_settings else 50
+    ai_enabled = match_settings.ai_enabled if match_settings else False
+    ai_weight = match_settings.ai_weight if match_settings else 0
+
     scored = []
     for u in users:
         score = 0
         user_sectors = {s.lower() for s in (u.sectors_of_interest or [])}
         common_sectors = project_sectors & user_sectors
-        score += len(common_sectors) * 25
+        score += len(common_sectors) * sw
 
         user_skills = {s.lower() for s in (u.skills or [])}
         if project.sub_sector and project.sub_sector.lower() in user_skills:
-            score += 20
+            score += skw
 
-        # Mentor-type compatibility scoring (only for mentor role)
         mentor_type = None
         if role == "mentor" and u.role_specific_data:
             mentor_type = u.role_specific_data.get("mentor_type")
             if mentor_type and preferred_mentor_type and mentor_type == preferred_mentor_type:
-                score += 30  # Strong bonus for exact mentor type match
+                score += mew
             elif mentor_type and preferred_mentor_type:
-                score += 10  # Partial bonus for any mentor type when innovator has preference
+                score += mpw
 
-        # Guided answer similarity scoring (if both have onboarding responses)
         if u.onboarding_responses and innovator_guided_answers:
             guided_score = calculate_guided_similarity(u.onboarding_responses, innovator_guided_answers)
             score += guided_score
 
-        scored.append((u, min(score, 100), mentor_type))
+        scored.append((u, min(score, 100), mentor_type, None, None))
 
     scored.sort(key=lambda x: x[1], reverse=True)
+    top_candidates = scored[:20]
+
+    if ai_enabled and role == "mentor":
+        innovator_profile = {
+            "full_name": innovator.full_name if innovator else "",
+            "bio": innovator.bio if innovator else "",
+            "skills": innovator.skills or [],
+            "sectors_of_interest": innovator.sectors_of_interest or [],
+            "onboarding_responses": innovator.onboarding_responses or {},
+            "role_specific_data": innovator.role_specific_data if innovator else {},
+        }
+        project_data = {
+            "title": project.title or "",
+            "description": project.description or "",
+            "sector": project.sector or "",
+            "sub_sector": project.sub_sector or "",
+        }
+
+        for i, (u, det_score, mt, _, _) in enumerate(top_candidates):
+            mentor_profile = {
+                "full_name": u.full_name or "",
+                "bio": u.bio or "",
+                "skills": u.skills or [],
+                "sectors_of_interest": u.sectors_of_interest or [],
+                "onboarding_responses": u.onboarding_responses or {},
+                "role_specific_data": u.role_specific_data or {},
+            }
+            ai_result = await score_with_ai(innovator_profile, mentor_profile, project_data)
+            if ai_result:
+                ai_s = ai_result["score"]
+                blended = int(det_score * (100 - ai_weight) / 100 + ai_s * ai_weight / 100)
+                top_candidates[i] = (u, min(blended, 100), mt, ai_s, ai_result["reason"])
 
     return [
         MatchSuggestionResponse(
@@ -331,8 +373,10 @@ async def get_match_suggestions(
             score=s,
             mentor_type=mt,
             onboarding_responses=u.onboarding_responses if role == "mentor" else None,
+            ai_score=ai_s,
+            ai_reason=ai_r,
         )
-        for u, s, mt in scored[:20]
+        for u, s, mt, ai_s, ai_r in top_candidates
     ]
 
 

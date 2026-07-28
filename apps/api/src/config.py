@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
     ADMIN_SEED_KEY: str = ""
 
+    LLM_API_KEY: str = ""
+    LLM_MODEL: str = "openai/gpt-4o-mini"
+    LLM_BASE_URL: str = "https://openrouter.ai/api/v1"
+
     ENABLED_FEATURES: str = (
         "connections,forums,events,galleries,document_library,blog,reporting"
     )

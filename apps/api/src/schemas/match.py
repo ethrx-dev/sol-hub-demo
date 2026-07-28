@@ -24,6 +24,8 @@ class MatchSuggestionResponse(BaseModel):
     score: int = 0
     mentor_type: str | None = None
     onboarding_responses: dict | None = None
+    ai_score: int | None = None
+    ai_reason: str | None = None
 
 
 class MatchResponse(BaseResponseWithUUID):
