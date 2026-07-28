@@ -7,6 +7,7 @@ import { api } from "@/src/lib/api-client";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Textarea } from "@/src/components/ui/textarea";
+import { RichTextEditor } from "@/src/components/admin/rich-text-editor";
 import { Badge } from "@/src/components/ui/badge";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import {
@@ -810,11 +811,12 @@ function SectionEditor({
             <Input value={(data.heading as string) || ""} onChange={(e) => set("heading", e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Body (HTML)</label>
-            <Textarea
-              className="font-mono text-xs min-h-[150px]"
+            <label className="text-xs font-medium text-muted-foreground">Body</label>
+            <RichTextEditor
               value={(data.body as string) || ""}
-              onChange={(e) => set("body", e.target.value)}
+              onChange={(v) => set("body", v)}
+              placeholder="Write your content here..."
+              minHeight={200}
             />
           </div>
         </div>
@@ -934,10 +936,11 @@ function SectionEditor({
       return (
         <div>
           <label className="text-xs font-medium text-muted-foreground">Custom HTML</label>
-          <Textarea
-            className="font-mono text-xs min-h-[200px]"
+          <RichTextEditor
             value={(data.html as string) || ""}
-            onChange={(e) => set("html", e.target.value)}
+            onChange={(v) => set("html", v)}
+            placeholder="Write your HTML content here..."
+            minHeight={250}
           />
         </div>
       );
@@ -1082,19 +1085,21 @@ function SectionEditor({
             </Select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Left Content (HTML)</label>
-            <Textarea
-              className="font-mono text-xs min-h-[100px]"
+            <label className="text-xs font-medium text-muted-foreground">Left Content</label>
+            <RichTextEditor
               value={(data.left as string) || ""}
-              onChange={(e) => set("left", e.target.value)}
+              onChange={(v) => set("left", v)}
+              placeholder="Write left column content..."
+              minHeight={150}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Right Content (HTML)</label>
-            <Textarea
-              className="font-mono text-xs min-h-[100px]"
+            <label className="text-xs font-medium text-muted-foreground">Right Content</label>
+            <RichTextEditor
               value={(data.right as string) || ""}
-              onChange={(e) => set("right", e.target.value)}
+              onChange={(v) => set("right", v)}
+              placeholder="Write right column content..."
+              minHeight={150}
             />
           </div>
         </div>
