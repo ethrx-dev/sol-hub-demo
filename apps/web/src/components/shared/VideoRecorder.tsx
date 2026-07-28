@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { MENTOR_VIDEO_QUESTIONS, MentorType } from "@/src/lib/mentor/types";
 
-type Pillar = "innovators" | "mentors" | "investors";
+type Pillar = "innovators" | "mentors" | "investors" | "participants";
 
 interface Question {
   label: string;
@@ -59,9 +59,15 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
   const cameraReadyRef = useRef(false);
   const recordingStartedRef = useRef(false);
 
-  const questions = pillar === "mentors" && mentorType
-    ? mentorVideoQuestions[mentorType]
-    : DEFAULT_QUESTIONS[pillar];
+  const isParticipant = pillar === "participants";
+  const questions = isParticipant
+    ? []
+    : pillar === "mentors" && mentorType
+      ? mentorVideoQuestions[mentorType]
+      : DEFAULT_QUESTIONS[pillar];
+
+  const totalSeconds = isParticipant ? 0 : TOTAL_SECONDS;
+  const questionSeconds = isParticipant ? 0 : SECONDS_PER_QUESTION - (elapsed % SECONDS_PER_QUESTION);
 
   const cleanup = useCallback(() => {
     if (timerRef.current) {
@@ -162,9 +168,11 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
     timerRef.current = setInterval(() => {
       seconds++;
       setElapsed(seconds);
-      setActiveQuestion(Math.min(Math.floor(seconds / SECONDS_PER_QUESTION), 2));
+      if (!isParticipant) {
+        setActiveQuestion(Math.min(Math.floor(seconds / SECONDS_PER_QUESTION), 2));
+      }
 
-      if (seconds >= TOTAL_SECONDS) {
+      if (!isParticipant && seconds >= TOTAL_SECONDS) {
         if (recorder.state === "recording") recorder.stop();
       }
     }, 1000);
@@ -251,8 +259,7 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
     recordingStartedRef.current = false;
   }, [cleanup]);
 
-  const remaining = TOTAL_SECONDS - elapsed;
-  const questionSeconds = SECONDS_PER_QUESTION - (elapsed % SECONDS_PER_QUESTION);
+  const remaining = totalSeconds - elapsed;
 
   if (!mounted) return null;
 
@@ -269,19 +276,24 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
       <div className="rounded-lg border bg-white p-6 shadow-sm">
         <h3 className="text-lg font-bold font-heading">Record Your Intro</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Record a 90-second video introducing yourself. Three questions, 30 seconds each.
+          {isParticipant
+            ? "Record a short video introducing yourself."
+            : "Record a 90-second video introducing yourself. Three questions, 30 seconds each."
+          }
         </p>
         {error && (
           <p className="mt-3 text-sm text-destructive bg-destructive/5 rounded p-2">{error}</p>
         )}
-        <ol className="mt-3 space-y-1 text-sm text-muted-foreground">
-          {questions.map((q, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="font-bold text-primary shrink-0">Q{i + 1}:</span>
-              <span>{q.label}</span>
-            </li>
-          ))}
-        </ol>
+        {!isParticipant && (
+          <ol className="mt-3 space-y-1 text-sm text-muted-foreground">
+            {questions.map((q, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="font-bold text-primary shrink-0">Q{i + 1}:</span>
+                <span>{q.label}</span>
+              </li>
+            ))}
+          </ol>
+        )}
         <button
           onClick={startCountdown}
           className="btn-sol btn-sol-primary text-sm mt-4 w-full"
@@ -333,17 +345,21 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
           <div className="absolute top-3 left-3 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs font-medium">REC</span>
-            <span className="text-xs tabular-nums ml-2">
-              {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
-            </span>
+            {!isParticipant && (
+              <span className="text-xs tabular-nums ml-2">
+                {Math.floor(remaining / 60)}:{(remaining % 60).toString().padStart(2, "0")}
+              </span>
+            )}
           </div>
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            <span className="text-xs bg-white/20 rounded-full px-2.5 py-1">
-              {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} / 1:30
-            </span>
-          </div>
+          {!isParticipant && (
+            <div className="absolute top-3 right-3 flex items-center gap-2">
+              <span className="text-xs bg-white/20 rounded-full px-2.5 py-1">
+                {Math.floor(elapsed / 60)}:{(elapsed % 60).toString().padStart(2, "0")} / 1:30
+              </span>
+            </div>
+          )}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 space-y-3 max-w-[200px]">
-            {questions.map((q, i) => (
+            {!isParticipant && questions.map((q, i) => (
               <div
                 key={i}
                 className={`rounded-lg px-3 py-2 text-xs transition-all duration-300 ${
@@ -357,14 +373,16 @@ export default function VideoRecorder({ pillar, mentorType }: { pillar: Pillar; 
               </div>
             ))}
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-300 rounded-full"
-                style={{ width: `${(elapsed / TOTAL_SECONDS) * 100}%` }}
-              />
+          {!isParticipant && (
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  style={{ width: `${(elapsed / TOTAL_SECONDS) * 100}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <button
           onClick={stopRecording}

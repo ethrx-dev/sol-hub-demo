@@ -46,10 +46,11 @@ const PILLAR_LABELS: Record<string, string> = {
   participant: "Participant",
 };
 
-const PILLAR_MAP: Record<string, "innovators" | "mentors" | "investors"> = {
+const PILLAR_MAP: Record<string, "innovators" | "mentors" | "investors" | "participants"> = {
   innovator: "innovators",
   mentor: "mentors",
   investor: "investors",
+  participant: "participants",
 };
 
 const WELCOME_STEPS = [
@@ -271,7 +272,10 @@ export function OnboardingFlow() {
               <div className="text-center">
                 <h2 className="text-2xl font-bold font-heading">Introduce Yourself</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Record a 90-second video answering 3 questions about your journey.
+                  {role === "participant"
+                    ? "Record a short video introducing yourself."
+                    : "Record a 90-second video answering 3 questions about your journey."
+                  }
                 </p>
               </div>
               <VideoRecorder

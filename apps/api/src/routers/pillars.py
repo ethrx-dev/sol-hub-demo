@@ -22,6 +22,7 @@ PILLAR_LABELS = {
     "innovators": "Innovators",
     "mentors": "Mentors",
     "investors": "Conscious Investors",
+    "participants": "Participant",
 }
 
 
@@ -64,6 +65,7 @@ PILLAR_ROLE_MAP = {
     "innovators": "innovator",
     "mentors": "mentor",
     "investors": "investor",
+    "participants": "participant",
 }
 
 
@@ -75,10 +77,10 @@ async def submit_video(
     db: DbSession = None,
     current_user: User = Depends(get_current_user),
 ):
-    if pillar not in ("innovators", "mentors", "investors"):
+    if pillar not in ("innovators", "mentors", "investors", "participants"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid pillar. Must be one of: innovators, mentors, investors",
+            detail="Invalid pillar. Must be one of: innovators, mentors, investors, participants",
         )
 
     expected_role = PILLAR_ROLE_MAP[pillar]
@@ -88,8 +90,13 @@ async def submit_video(
             detail=f"Only {expected_role}s can submit to the {pillar} pillar",
         )
 
-    # Validate mentor_type if provided (only for mentors pillar)
-    if mentor_type and pillar == "mentors":
+    if pillar == "participants":
+        if mentor_type:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="mentor_type is not valid for participants pillar",
+            )
+    elif mentor_type and pillar == "mentors":
         valid_types = ["psych", "prof", "coach"]
         if mentor_type not in valid_types:
             raise HTTPException(
