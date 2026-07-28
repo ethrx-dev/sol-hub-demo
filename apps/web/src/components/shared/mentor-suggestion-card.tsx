@@ -19,6 +19,8 @@ interface MentorSuggestionCardProps {
     score: number;
     mentor_type?: string | null;
     onboarding_responses?: Record<string, unknown> | null;
+    ai_score?: number | null;
+    ai_reason?: string | null;
   };
   onRequestMatch?: (userId: string) => void;
   requesting?: boolean;
@@ -38,14 +40,17 @@ export function MentorSuggestionCard({
   const [showWhy, setShowWhy] = useState(false);
   const mentorLabel = user.mentor_type ? getMentorTypeLabel(user.mentor_type as MentorType) : null;
 
-  // Build a human-readable "why" breakdown from available signals.
   const whyReasons: string[] = [];
-  if (user.mentor_type) whyReasons.push(`Mentor type: ${mentorLabel}`);
-  if (user.sectors_of_interest?.length)
-    whyReasons.push(`Sector interest: ${user.sectors_of_interest.join(", ")}`);
-  if (user.skills?.length) whyReasons.push(`Skills: ${user.skills.slice(0, 4).join(", ")}`);
-  if (user.onboarding_responses?.guided_answers)
-    whyReasons.push("Guided Q&A completed");
+  if (user.ai_reason) {
+    whyReasons.push(`AI insight: ${user.ai_reason}`);
+  } else {
+    if (user.mentor_type) whyReasons.push(`Mentor type: ${mentorLabel}`);
+    if (user.sectors_of_interest?.length)
+      whyReasons.push(`Sector interest: ${user.sectors_of_interest.join(", ")}`);
+    if (user.skills?.length) whyReasons.push(`Skills: ${user.skills.slice(0, 4).join(", ")}`);
+    if (user.onboarding_responses?.guided_answers)
+      whyReasons.push("Guided Q&A completed");
+  }
 
   return (
     <Card>
@@ -82,6 +87,11 @@ export function MentorSuggestionCard({
               {user.score}
             </div>
             <span className="mt-1 text-[10px] text-muted-foreground">match</span>
+            {user.ai_score != null && (
+              <span className="mt-0.5 text-[9px] text-blue-500 font-medium">
+                AI: {user.ai_score}
+              </span>
+            )}
           </div>
         </div>
 
