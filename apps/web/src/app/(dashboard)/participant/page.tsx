@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/src/lib/auth";
+import { api } from "@/src/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { Users, BookOpen, Bell, ArrowRight, Camera, Sparkles } from "lucide-react";
+import { Users, BookOpen, Bell, ArrowRight, Camera, Sparkles, Lightbulb } from "lucide-react";
 import VideoRecorder from "@/src/components/shared/VideoRecorder";
 
 export default function ParticipantDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [showVideo, setShowVideo] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -123,6 +125,36 @@ export default function ParticipantDashboard() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-dashed border-primary/30 bg-primary/5">
+        <CardContent className="flex items-center gap-4 p-6">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Lightbulb className="h-7 w-7 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold font-heading">Ready for More?</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Upgrade to Innovator — submit a project, get matched with a mentor, and bring your idea to life.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              setConverting(true);
+              try {
+                await api.post("/users/me/change-role", { role: "innovator" });
+                await refreshUser();
+                window.location.href = "/assess";
+              } catch {
+                setConverting(false);
+              }
+            }}
+            disabled={converting}
+            className="btn-sol btn-sol-primary shrink-0 text-sm"
+          >
+            {converting ? "Upgrading..." : "Become an Innovator"}
+          </button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

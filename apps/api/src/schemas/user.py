@@ -3,6 +3,10 @@ from pydantic import BaseModel
 from .common import BaseResponseWithUUID
 
 
+class ChangeRoleRequest(BaseModel):
+    role: str
+
+
 class UpdateProfileRequest(BaseModel):
     full_name: str | None = None
     bio: str | None = None

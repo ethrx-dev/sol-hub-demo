@@ -5,6 +5,7 @@ from sqlalchemy import select, func, update
 
 from src.deps import DbSession, CurrentUser
 from src.models.user import User
+from src.models.profile import Profile
 from src.models.notification import Notification
 from src.schemas.user import UpdateProfileRequest, PublicProfileResponse, NotificationResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
@@ -127,3 +128,33 @@ async def mark_all_read(db: DbSession, current_user: CurrentUser):
         .values(is_read=True)
     )
     return {"detail": "All notifications marked as read"}
+
+
+@router.post("/me/engage-resonance", response_model=MessageResponse)
+async def engage_resonance(db: DbSession, current_user: CurrentUser):
+    result = await db.execute(select(Profile).where(Profile.user_id == current_user.id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = Profile(user_id=current_user.id, role_specific_data={})
+        db.add(profile)
+
+    role_data = dict(profile.role_specific_data or {})
+    role_data["resonance_gateway_engaged"] = True
+    profile.role_specific_data = role_data
+    await db.flush()
+
+    return {"detail": "Resonance engagement recorded"}
+
+
+@router.post("/me/change-role", response_model=MessageResponse)
+async def change_role(body: ChangeRoleRequest, db: DbSession, current_user: CurrentUser):
+    if current_user.role != "participant":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only participants can change role")
+    if body.role not in ("innovator",):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can only change to innovator")
+
+    current_user.role = body.role
+    current_user.onboarding_completed = False
+    await db.flush()
+
+    return {"detail": f"Role changed to {body.role}. Please complete the innovator assessment and onboarding."}
