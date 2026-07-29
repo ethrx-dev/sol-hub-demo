@@ -288,9 +288,13 @@ async def get_match_suggestions(
 
     innovator = await db.get(User, project.innovator_id)
     preferred_mentor_type = None
+    innovator_type = None
     if innovator and innovator.role_specific_data:
         preferred_mentor_type = innovator.role_specific_data.get("mentor_type")
+        innovator_type = innovator.role_specific_data.get("innovator_type")
     innovator_guided_answers = innovator.onboarding_responses if innovator else {}
+
+    INNOVATOR_TO_MENTOR = {1: "psych", 2: "prof", 3: "coach", 4: "coach"}
 
     ms_result = await db.execute(select(MatchSetting).limit(1))
     match_settings = ms_result.scalar_one_or_none()
@@ -321,6 +325,9 @@ async def get_match_suggestions(
                 score += mew
             elif mentor_type and preferred_mentor_type:
                 score += mpw
+
+            if innovator_type and mentor_type == INNOVATOR_TO_MENTOR.get(innovator_type):
+                score += 15
 
         if u.onboarding_responses and innovator_guided_answers:
             guided_score = calculate_guided_similarity(u.onboarding_responses, innovator_guided_answers)

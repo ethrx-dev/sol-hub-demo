@@ -25,6 +25,7 @@ from src.routers.pages import router as pages_router
 from src.routers.contact import router as contact_router
 from src.routers.affiliate import router as affiliate_router
 from src.routers.files import router as files_router
+from src.routers.innovator import router as innovator_router
 
 FeatureRouter = tuple[str, APIRouter]
 
@@ -54,6 +55,7 @@ CORE_ROUTERS: list[FeatureRouter] = [
     ("core", contact_router),
     ("core", affiliate_router),
     ("core", files_router),
+    ("core", innovator_router),
 ]
 
 FEATURE_ROUTERS: dict[str, APIRouter] = {}

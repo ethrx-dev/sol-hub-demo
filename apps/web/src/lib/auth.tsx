@@ -112,7 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         investor: "/investor/browse",
         participant: "/participant",
       };
-      router.push(user.onboarding_completed ? dashPaths[user.role] || "/" : "/onboarding");
+      const innovatorType = (user as any)?.role_specific_data?.innovator_type;
+      if (!user.onboarding_completed && user.role === "innovator" && !innovatorType) {
+        router.push("/assess");
+      } else {
+        router.push(user.onboarding_completed ? dashPaths[user.role] || "/" : "/onboarding");
+      }
     }
   };
 
@@ -130,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     const user = await setAuth(data.access_token);
     if (user) {
-      router.push("/onboarding");
+      router.push(user.role === "innovator" ? "/assess" : "/onboarding");
     }
   };
 
