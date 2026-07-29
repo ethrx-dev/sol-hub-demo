@@ -18,7 +18,7 @@ import { api } from "@/src/lib/api-client";
 import { toast } from "sonner";
 import VideoRecorder from "@/src/components/shared/VideoRecorder";
 import { useTourStore } from "@/src/stores/tour-store";
-import { Compass, Radio, Check } from "lucide-react";
+import { Compass, Radio, Check, Sparkles, ArrowRight } from "lucide-react";
 import {
   MENTOR_TYPES,
   MENTOR_GUIDED_QUESTIONS,
@@ -200,21 +200,42 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {/* Step 2: Becoming Seen */}
+          {/* Step 2: Meet Whitney — Resonance Gateway */}
           {step === 2 && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center mb-2">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-2xl font-bold text-primary font-heading">
-                    {role === "innovator" ? "I" : role === "mentor" ? "M" : role === "investor" ? "CI" : "P"}
-                  </span>
+                  <Sparkles className="h-8 w-8 text-primary" />
                 </div>
               </div>
-              <h2 className="text-2xl font-bold font-heading">What&apos;s true for you?</h2>
+              <h2 className="text-2xl font-bold font-heading">Be Met Before You Begin</h2>
               <p className="text-sm text-muted-foreground">
-                There&apos;s no test here and nothing to qualify for. As we meet you, the shape of
-                your contribution &mdash; as an innovator, mentor, collaborator, or investor &mdash;
-                comes into view. You&apos;ll see what came into focus for you on the next step.
+                Before anything is asked of you &mdash; before any role is named, before any
+                contribution is expected &mdash; you are first invited to be met.
+              </p>
+              <div className="rounded-lg border bg-muted/30 p-4 text-left text-sm space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <span className="text-lg font-bold text-primary font-heading">W</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Whitney &mdash; SOL&apos;s Resonance Steward</p>
+                    <p className="text-xs text-muted-foreground">The first living gateway into Spaces of Learning</p>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  &ldquo;The mirror has no identity. I&apos;m not deciding whether you belong. I&apos;m holding a
+                  quality of conversation in which people become more visible to themselves.&rdquo;
+                </p>
+                <Link
+                  href="/resonance"
+                  className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Learn more about the Resonance Gateway <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                After onboarding, you&apos;ll have the opportunity to book a conversation with Whitney.
               </p>
             </div>
           )}
@@ -473,6 +494,18 @@ export function OnboardingFlow() {
                   <div>
                     <p className="text-sm font-medium">Browse Resources</p>
                     <p className="text-xs text-muted-foreground">Templates, guides, and learning materials</p>
+                  </div>
+                </Link>
+                <Link
+                  href="/resonance"
+                  className="flex items-center gap-3 rounded-lg border p-3 hover:bg-sage-light/20 transition-colors"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium">Meet Whitney — Resonance Steward</p>
+                    <p className="text-xs text-muted-foreground">Book a conversation to be met before you begin</p>
                   </div>
                 </Link>
                 <button
