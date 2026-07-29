@@ -7,7 +7,7 @@ from src.deps import DbSession, CurrentUser
 from src.models.user import User
 from src.models.profile import Profile
 from src.models.notification import Notification
-from src.schemas.user import UpdateProfileRequest, PublicProfileResponse, NotificationResponse
+from src.schemas.user import ChangeRoleRequest, UpdateProfileRequest, PublicProfileResponse, NotificationResponse
 from src.schemas.common import MessageResponse, PaginatedResponse
 from src.utils.file_validator import validate_file, validate_file_size, generate_storage_key, get_file_category
 from src.utils.storage import upload_file
